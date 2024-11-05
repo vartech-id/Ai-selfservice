@@ -72,10 +72,6 @@ def update_workflow(workflow, template_path, source_path):
     return workflow
 
 # Routes
-@app.route('/')
-def index():
-    """Serve the main HTML page."""
-    return render_template('index.html')
 
 @app.route('/admin', methods=['GET'])
 def admin_page():
