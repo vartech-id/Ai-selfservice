@@ -93,18 +93,29 @@ def get_template(filename):
 @app.route('/api/swap', methods=['POST'])
 def swap_face():
     """Perform the face swap operation."""
-    template = request.form.get('template')
+    template = request.files.get('template')
     source = request.files.get('source')
 
+    # Log the details to ensure Flask is receiving the files
     if not template or not source:
+        app.logger.error(f'Missing files: template={template} source={source}')
         return jsonify({'error': 'Missing template or source image'}), 400
 
-    template_path = os.path.join(TEMPLATE_DIR, template)
-    
-    # Save the uploaded source image to a temporary file
-    temp_dir = tempfile.gettempdir()
-    source_path = os.path.join(temp_dir, f"source_{uuid.uuid4()}.jpg")
+    # Log file details (name, size, and type)
+    app.logger.info(f'Received template: {template.filename}, size: {template.content_length}, type: {template.mimetype}')
+    app.logger.info(f'Received source: {source.filename}, size: {source.content_length}, type: {source.mimetype}')
+
+    # Save files (temporary path)
+    template_path = os.path.join(TEMPLATE_DIR, template.filename)
+    source_path = os.path.join(tempfile.gettempdir(), f"source_{uuid.uuid4()}.jpg")
+
+    # Save the files to disk
+    template.save(template_path)
     source.save(source_path)
+
+    # Log the paths where the files are saved
+    app.logger.info(f'Template saved at: {template_path}')
+    app.logger.info(f'Source saved at: {source_path}')
 
     workflow = load_workflow()
     updated_workflow = update_workflow(workflow, template_path, source_path)

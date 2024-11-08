@@ -30,12 +30,21 @@ function TemplateList() {
   };
 
   const handleSwap = async () => {
-    // if (selectedTemplate && sourceImage) {
-    //   const result = await swapFace(selectedTemplate, sourceImage);
-    //   setSwappedImage(`data:image/jpeg;base64,${result}`);
-    // }
+    if (!selectedTemplate || !sourceImage) {
+      alert("Please select a template and upload a source image.");
+      return;
+    }
 
-    console.log("clicked!");
+    try {
+      const swappedImageUrl = await swapFace(selectedTemplate, sourceImage);
+      if (swappedImageUrl) {
+        setSwappedImage(swappedImageUrl); // Display the swapped image
+      } else {
+        alert("Face swap failed. Try again.");
+      }
+    } catch (error) {
+      alert("Error during face swap.");
+    }
   };
 
   return (
@@ -48,6 +57,7 @@ function TemplateList() {
             onClick={() => handleTemplateClick(template.imageUrl)}
             style={{ margin: 10 }}
           >
+            {console.log(template.imageUrl)}
             <img
               src={template.imageUrl}
               alt={template.filename}

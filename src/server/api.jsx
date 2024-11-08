@@ -19,23 +19,62 @@ export const getTemplate = async (filename) => {
 };
 
 export const swapFace = async (template, sourceImage) => {
+  // Fetch the template image as a Blob
+  const templateBlob = await fetch(template)
+    .then((response) => response.blob())
+    .catch((error) => {
+      console.error("Error fetching template image:", error);
+      return null;
+    });
+
+  if (!templateBlob) {
+    console.error("Template image could not be fetched");
+    return null;
+  }
+
+  // Create a FormData object to send both template (as file) and source image
   const formData = new FormData();
-  formData.append("template", template); // The filename of the template
-  formData.append("source", sourceImage); // The actual source image file
+
+  // Append the template image as a file
+  formData.append("template", templateBlob, "template.jpg"); // Use appropriate file extension for template
+
+  // Append the source image file
+  formData.append("source", sourceImage); // Assuming sourceImage is a File object from the file input
+
+  // Log the formData entries with more details about the files
+  for (let [key, value] of formData.entries()) {
+    if (value instanceof File) {
+      console.log(
+        `${key}: [File] name=${value.name}, size=${value.size}, type=${value.type}`
+      );
+    } else {
+      console.log(`${key}: ${value}`);
+    }
+  }
 
   try {
-    const response = await axios.post(`${API_BASE_URL}/swap`, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+    // Send the POST request to the Flask server
+    const response = await axios.post(
+      "http://127.0.0.1:5000/api/swap",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data", // Indicate that we are sending files
+        },
+      }
+    );
+
+    // Check if the response contains the swapped image
     if (response.data.image) {
-      return response.data.image; // Ensure that image data is returned from the server
+      // Convert the base64 image to an image URL
+      const swappedImageUrl = `data:image/jpeg;base64,${response.data.image}`;
+      return swappedImageUrl;
     } else {
-      throw new Error("No image returned from the server.");
+      console.error("Error: No image returned");
+      return null;
     }
   } catch (error) {
     console.error("Error swapping face:", error);
-    throw error; // Re-throw for better error handling in the component
+    return null;
   }
 };
