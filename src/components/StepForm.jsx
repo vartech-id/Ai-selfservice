@@ -17,8 +17,9 @@ const StepForm = ({ steps, resetFormData }) => {
     resetFormData();
   };
 
+  const dynamicButtonText = stepIndex === 0 ? "Start" : "Next";
+
   console.log(stepIndex);
-  
 
   return (
     <div>
@@ -26,9 +27,9 @@ const StepForm = ({ steps, resetFormData }) => {
       <div>
         {stepIndex > 0 && <button onClick={handlePreviousStep}>Back</button>}
         {stepIndex < steps.length - 1 ? (
-          <button onClick={handleNextStep}>Next</button>
+          <button onClick={handleNextStep}>{dynamicButtonText}</button>
         ) : (
-          <button onClick={() => alert("Form submitted!")}>Submit</button>
+          <button onClick={handleSubmit}>Submit</button>
         )}
       </div>
     </div>

@@ -2,21 +2,37 @@ import axios from "axios";
 
 const API_BASE_URL = "http://127.0.0.1:5000/api";
 
-export const getTemplates = async () => {
+export const getTemplateByGender = async (gender) => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/templates`);
+    const response = await axios.get(
+      // path = men, hijab, non-hijab
+      `${API_BASE_URL}/templates?path=${gender}`
+    );
     return response.data;
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching templates:", error);
+    throw error;
   }
 };
 
-export const getTemplate = async (filename) => {
-  const response = await axios.get(`${API_BASE_URL}/template/${filename}`, {
-    responseType: "blob",
-  });
-  return URL.createObjectURL(response.data);
+export const getTemplate = async (imageUrl) => {
+  const response = await axios.get(`${API_BASE_URL}/template/${imageUrl}`);
+  return response.data;
 };
+
+// export const performFaceSwap = async (template, templatePath, imageBlob) => {
+//   const formData = new FormData();
+//   formData.append("template", template);
+//   formData.append("template_path", templatePath);
+//   formData.append("source", imageBlob, "capture.jpg");
+
+//   try {
+//     const response = await axios.post("/api/swap", formData);
+//     return response.data;
+//   } catch (error) {
+//     console.error("Error performing face swap:", error);
+//   }
+// };
 
 export const swapFace = async (template, sourceImage) => {
   // Fetch the template image as a Blob

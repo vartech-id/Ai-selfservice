@@ -1,4 +1,3 @@
-# app.py
 from flask import Flask, request, jsonify, send_file, render_template
 import os
 import uuid
@@ -13,124 +12,163 @@ import tempfile
 import websocket
 from flask_cors import CORS
 
+# Initialize the Flask app
 app = Flask(__name__)
 CORS(app)
 
 # Configuration
-TEMPLATE_DIR = r"C:\Users\Kei\Downloads\faceswap_ai\src\assets"
-SERVER_ADDRESS = "127.0.0.1:8188"
-CLIENT_ID = str(uuid.uuid4())
+BASE_ASSET_DIR = r"C:\Users\Kei\Downloads\faceswap_general\src\assets"  # Directory to store assets like images
+SERVER_ADDRESS = "127.0.0.1:8188"  # Address of the backend server that handles face swapping
+CLIENT_ID = str(uuid.uuid4())  # Unique identifier for each client (this will be sent to the backend to track the session)
 
-#Function
+
+# Function to queue a prompt for processing
 def queue_prompt(prompt):
+    # Creates a dictionary containing the prompt and client ID, then sends it to the backend server.
     p = {"prompt": prompt, "client_id": CLIENT_ID}
-    data = json.dumps(p).encode('utf-8')
-    req = urllib.request.Request(f"http://{SERVER_ADDRESS}/prompt", data=data)
-    return json.loads(urllib.request.urlopen(req).read())
+    data = json.dumps(p).encode('utf-8')  # Convert the data into JSON and encode it in UTF-8
+    req = urllib.request.Request(f"http://{SERVER_ADDRESS}/prompt", data=data)  # Create a request to the backend
+    return json.loads(urllib.request.urlopen(req).read())  # Send the request and return the response as a Python dictionary
 
+# Function to retrieve an image from the backend server
 def get_image(filename, subfolder, folder_type):
+    # Constructs a query to retrieve an image based on the filename, subfolder, and type
     data = {"filename": filename, "subfolder": subfolder, "type": folder_type}
-    url_values = urllib.parse.urlencode(data)
+    url_values = urllib.parse.urlencode(data)  # Encodes the data into URL format
+    # Makes a request to the backend server to get the image
     with urllib.request.urlopen(f"http://{SERVER_ADDRESS}/view?{url_values}") as response:
-        return response.read()
+        return response.read()  # Returns the image data
 
+# Function to get the history of a specific prompt
 def get_history(prompt_id):
+    # Makes a request to the backend server to retrieve the history of the prompt by its ID
     with urllib.request.urlopen(f"http://{SERVER_ADDRESS}/history/{prompt_id}") as response:
-        return json.loads(response.read())
+        return json.loads(response.read())  # Parses the response JSON and returns it
 
+# Function to retrieve the images based on the prompt
 def get_images(ws, prompt):
+    # First, queue the prompt to the backend
     prompt_id = queue_prompt(prompt)['prompt_id']
-    output_images = {}
+    output_images = {}  # Dictionary to store the images
+
+    # Infinite loop to receive responses from the WebSocket
     while True:
-        out = ws.recv()
+        out = ws.recv()  # Wait for a message from the WebSocket server
         if isinstance(out, str):
-            message = json.loads(out)
+            message = json.loads(out)  # Parse the message as JSON
+            # Check if the prompt is being executed and if the node output is available
             if message['type'] == 'executing':
                 data = message['data']
                 if data['node'] is None and data['prompt_id'] == prompt_id:
-                    break
+                    break  # Break the loop when the execution is complete
                 else:
-                    continue
+                    continue  # Continue checking until the execution completes
+
+    # Get the history of the prompt to find the generated images
     history = get_history(prompt_id)[prompt_id]
     for node_id in history['outputs']:
         node_output = history['outputs'][node_id]
+        # Check if images exist in the output of this node
         if 'images' in node_output:
             images_output = []
             for image in node_output['images']:
+                # For each image in the node's output, retrieve the image data from the backend
                 image_data = get_image(image['filename'], image['subfolder'], image['type'])
                 images_output.append(image_data)
-            output_images[node_id] = images_output
-    return output_images
+            output_images[node_id] = images_output  # Store the images in the output dictionary
+    return output_images  # Return the images
 
+# Function to load the workflow configuration
 def load_workflow():
-    with open("fswap.json", "r", encoding="utf-8") as f:
-        return json.load(f)
+    with open("main.json", "r", encoding="utf-8") as f:
+        return json.load(f)  # Loads the workflow from a JSON file and returns it as a Python dictionary
 
+# Function to update the workflow with the selected template and source image paths
 def update_workflow(workflow, template_path, source_path):
-    workflow["1"]["inputs"]["image"] = template_path
-    workflow["3"]["inputs"]["image"] = source_path
-    return workflow
+    # Update the inputs of nodes in the workflow based on the provided paths
+    workflow["1"]["inputs"]["image"] = template_path  # Set the template image path
+    workflow["3"]["inputs"]["image"] = source_path    # Set the source image path
+    return workflow  # Return the updated workflow
 
-# Routes
-
-@app.route('/admin', methods=['GET'])
-def admin_page():
-    """Serve the admin HTML page."""
-    return render_template('admin.html')
-
+# API endpoint to get templates based on a path
 @app.route('/api/templates', methods=['GET'])
 def get_templates():
-    """Return a list of available templates."""
-    templates = [f for f in os.listdir(TEMPLATE_DIR) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+    """Return templates based on the provided path."""
+    path = request.args.get('path', '').strip()
+    
+    if not path:
+        return jsonify({'error': 'Path is required'}), 400
+
+    # Build the full path
+    full_path = os.path.join(BASE_ASSET_DIR, *path.split('/'))
+
+    # Check if the path exists
+    if not os.path.exists(full_path) or not os.path.isdir(full_path):
+        return jsonify({'error': 'Path not found'}), 404
+
+    # List all valid image files in the directory
+    templates = [
+        f for f in os.listdir(full_path)
+        if os.path.isfile(os.path.join(full_path, f)) and f.lower().endswith(('.jpg', '.jpeg', '.png'))
+    ]
+    
     return jsonify(templates)
 
-@app.route('/api/template/<filename>', methods=['GET'])
-def get_template(filename):
-    """Return a specific template image."""
-    filepath = os.path.join(TEMPLATE_DIR, filename)
-    return send_file(filepath, mimetype='image/jpeg')
 
+
+# Flask route to retrieve a specific template image by filepath
+@app.route('/api/template/<path:filepath>', methods=['GET'])
+def get_template(filepath):
+    """Return a specific template image."""
+    full_path = os.path.join(BASE_ASSET_DIR, filepath)  # Construct the full path to the template image
+    if os.path.exists(full_path):
+        return send_file(full_path, mimetype='image')  # Send the image file as a response
+    return 'Image not found', 404  # If the image doesn't exist, return a 404 error
+
+# Flask route to handle the face swap operation
 @app.route('/api/swap', methods=['POST'])
 def swap_face():
     """Perform the face swap operation."""
-    template = request.files.get('template')
+    # Retrieve the template, source image, and template path from the request
+    template = request.form.get('template')
     source = request.files.get('source')
+    template_path = request.form.get('template_path')  # Full path to the template directory
 
-    # Log the details to ensure Flask is receiving the files
-    if not template or not source:
-        app.logger.error(f'Missing files: template={template} source={source}')
-        return jsonify({'error': 'Missing template or source image'}), 400
+    # Validate that the necessary data is present
+    if not template or not source or not template_path:
+        return jsonify({'error': 'Missing template or source image'}), 400  # Return an error if data is missing
 
-    # Log file details (name, size, and type)
-    app.logger.info(f'Received template: {template.filename}, size: {template.content_length}, type: {template.mimetype}')
-    app.logger.info(f'Received source: {source.filename}, size: {source.content_length}, type: {source.mimetype}')
+    # Construct the full path to the template image
+    template_full_path = os.path.join(BASE_ASSET_DIR, template_path, template)
+    
+    # Save the uploaded source image to a temporary file
+    temp_dir = tempfile.gettempdir()
+    source_path = os.path.join(temp_dir, f"source_{uuid.uuid4()}.jpg")
+    source.save(source_path)  # Save the source image to a temporary file
 
-    # Save files (temporary path)
-    template_path = os.path.join(TEMPLATE_DIR, template.filename)
-    source_path = os.path.join(tempfile.gettempdir(), f"source_{uuid.uuid4()}.jpg")
-
-    # Save the files to disk
-    template.save(template_path)
-    source.save(source_path)
-
-    # Log the paths where the files are saved
-    app.logger.info(f'Template saved at: {template_path}')
-    app.logger.info(f'Source saved at: {source_path}')
-
+    # Load the workflow configuration
     workflow = load_workflow()
-    updated_workflow = update_workflow(workflow, template_path, source_path)
+    # Update the workflow with the selected template and source image paths
+    updated_workflow = update_workflow(workflow, template_full_path, source_path)
 
+    # Establish a WebSocket connection to the backend server
     ws = websocket.WebSocket()
     ws.connect(f"ws://{SERVER_ADDRESS}/ws?clientId={CLIENT_ID}")
+    
+    # Retrieve the generated images from the backend
     images = get_images(ws, updated_workflow)
 
-    # For simplicity, we'll just return the first image
+    # Clean up by removing the temporary source image file
+    os.remove(source_path)
+
+    # If images are returned, return the first generated image as a base64-encoded string
     for node_id, image_data_list in images.items():
         if image_data_list:
-            image_data = image_data_list[0]
-            return jsonify({'image': base64.b64encode(image_data).decode('utf-8')})
+            image_data = image_data_list[0]  # Get the first image in the list
+            return jsonify({'image': base64.b64encode(image_data).decode('utf-8')})  # Return the image as base64
 
-    return jsonify({'error': 'No image generated'}), 400
+    return jsonify({'error': 'No image generated'}), 400  # If no image is generated, return an error
 
+# Run the Flask application
 if __name__ == '__main__':
     app.run(debug=True)
