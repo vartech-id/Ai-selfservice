@@ -1,27 +1,34 @@
 import React, { useEffect, useState } from "react";
-import { getTemplateByGender, getTemplate } from "../../server/api";
+import { fetchTemplates } from "../../server/api";
 
 const Gender = () => {
-  const [gender, setGender] = useState(localStorage.getItem("gender") | null);
+  const [gender, setGender] = useState(localStorage.getItem("gender") || null);
   const [templates, setTemplates] = useState([]);
-
-  useEffect(() => {
-    const fetchTemplates = async () => {
-      try {
-        const data = await getTemplateByGender(gender);
-        setTemplates(data);
-      } catch (error) {
-        console.error("Error: ", error);
-      }
-    };
-
-    fetchTemplates();
-  }, [gender]);
 
   // Save gender selection to state and localStorage
   const saveGender = (selectedGender) => {
     setGender(selectedGender);
     localStorage.setItem("gender", selectedGender);
+  };
+
+  // Fetch templates whenever the gender changes
+  useEffect(() => {
+    const loadTemplates = async () => {
+      if (gender) {
+        try {
+          const fetchedTemplates = await fetchTemplates(gender);
+          setTemplates(fetchedTemplates);
+        } catch (error) {
+          setTemplates([]);
+        }
+      }
+    };
+
+    loadTemplates();
+  }, [gender]);
+
+  const templateSelected = (filename) => {
+    localStorage.setItem("selectedTemplate", filename);
   };
 
   return (
@@ -43,13 +50,17 @@ const Gender = () => {
       {templates && templates.length > 0 ? (
         <div>
           <h4>Templates:</h4>
-          {templates.map((imageUrl, index) => (
-            <img
-              key={index}
-              src={`http://127.0.0.1:5000/api/template/${gender}/${imageUrl}`}
-              alt="templates"
-            />
-          ))}
+          <div className="flex gap-4">
+            {templates.map((template, index) => (
+              <img
+                key={index}
+                src={template.imageUrl} // Use the imageUrl from the API
+                alt="template"
+                className="w-44 h-auto cursor-pointer"
+                onClick={() => templateSelected(template.filename)}
+              />
+            ))}
+          </div>
         </div>
       ) : (
         <p>No templates available.</p>

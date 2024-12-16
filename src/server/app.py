@@ -11,6 +11,7 @@ import cv2
 import tempfile
 import websocket
 from flask_cors import CORS
+from urllib.parse import unquote
 
 # Initialize the Flask app
 app = Flask(__name__)
@@ -20,7 +21,6 @@ CORS(app)
 BASE_ASSET_DIR = r"C:\Users\Kei\Downloads\faceswap_general\src\assets"  # Directory to store assets like images
 SERVER_ADDRESS = "127.0.0.1:8188"  # Address of the backend server that handles face swapping
 CLIENT_ID = str(uuid.uuid4())  # Unique identifier for each client (this will be sent to the backend to track the session)
-
 
 # Function to queue a prompt for processing
 def queue_prompt(prompt):
@@ -90,40 +90,46 @@ def update_workflow(workflow, template_path, source_path):
     workflow["3"]["inputs"]["image"] = source_path    # Set the source image path
     return workflow  # Return the updated workflow
 
-# API endpoint to get templates based on a path
-@app.route('/api/templates', methods=['GET'])
-def get_templates():
-    """Return templates based on the provided path."""
-    path = request.args.get('path', '').strip()
-    
-    if not path:
-        return jsonify({'error': 'Path is required'}), 400
-
-    # Build the full path
-    full_path = os.path.join(BASE_ASSET_DIR, *path.split('/'))
-
-    # Check if the path exists
-    if not os.path.exists(full_path) or not os.path.isdir(full_path):
-        return jsonify({'error': 'Path not found'}), 404
-
-    # List all valid image files in the directory
-    templates = [
-        f for f in os.listdir(full_path)
-        if os.path.isfile(os.path.join(full_path, f)) and f.lower().endswith(('.jpg', '.jpeg', '.png'))
+# Helper function to validate and list images in a folder
+def list_images(folder_path):
+    if not os.path.exists(folder_path) or not os.path.isdir(folder_path):
+        return None
+    return [
+        f for f in os.listdir(folder_path)
+        if os.path.isfile(os.path.join(folder_path, f)) and f.lower().endswith((".jpg", ".jpeg", ".png"))
     ]
     
-    return jsonify(templates)
+# API endpoint to list images in a specific folder
+@app.route('/api/images', methods=['GET'])
+def get_images():
+    folder = request.args.get('folder', '').strip()
+    if not folder:
+        return jsonify({"error": "Folder parameter is required."}), 400
 
+    # Construct the full path to the folder
+    full_path = os.path.join(BASE_ASSET_DIR, *folder.split('/'))
 
+    # Get the list of images
+    images = list_images(full_path)
+    if images is None:
+        return jsonify({"error": "Folder not found or invalid."}), 404
 
-# Flask route to retrieve a specific template image by filepath
-@app.route('/api/template/<path:filepath>', methods=['GET'])
-def get_template(filepath):
-    """Return a specific template image."""
-    full_path = os.path.join(BASE_ASSET_DIR, filepath)  # Construct the full path to the template image
-    if os.path.exists(full_path):
-        return send_file(full_path, mimetype='image')  # Send the image file as a response
-    return 'Image not found', 404  # If the image doesn't exist, return a 404 error
+    return jsonify(images)
+
+# API endpoint to fetch a specific image
+@app.route('/api/image', methods=['GET'])
+def get_image():
+    filepath = request.args.get('filepath', '').strip()
+    if not filepath:
+        return jsonify({"error": "Filepath parameter is required."}), 400
+
+    # Construct the full path to the image
+    full_path = os.path.join(BASE_ASSET_DIR, *filepath.split('/'))
+
+    if os.path.exists(full_path) and os.path.isfile(full_path):
+        return send_file(full_path, mimetype='image/jpeg')
+
+    return jsonify({"error": "Image not found."}), 404
 
 # Flask route to handle the face swap operation
 @app.route('/api/swap', methods=['POST'])

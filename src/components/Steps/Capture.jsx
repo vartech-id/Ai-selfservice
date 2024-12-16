@@ -55,8 +55,11 @@ const CameraCapture = () => {
     startCamera(); // Restart the camera feed
   };
 
+  const selectedTemplate = localStorage.getItem("selectedTemplate")
+
   return (
     <div>
+      <h1>{selectedTemplate}</h1>
       <h2>Camera Capture</h2>
 
       {isVideoVisible && (
