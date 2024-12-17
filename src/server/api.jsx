@@ -20,19 +20,18 @@ export const fetchTemplates = async (gender) => {
 };
 
 // Get a specific template by filename
-export const getTemplate = async (filename) => {
-  const response = await axios.get(
-    `${API_BASE_URL}/template/${encodeURIComponent(filename)}`,
-    {
-      responseType: "blob",
-    }
-  );
+// export const getTemplate = async (filename) => {
+//   const response = await axios.get(
+//     `${API_BASE_URL}/template/${encodeURIComponent(filename)}`,
+//     {
+//       responseType: "blob",
+//     }
+//   );
 
-  return URL.createObjectURL(response.data);
-};
+//   return URL.createObjectURL(response.data);
+// };
 
-
-export const swapFace = async (template, sourceImage) => {
+export const swapFace = async (template, sourceImage, template_path) => {
   // Fetch the template image as a Blob
   const templateBlob = await fetch(template)
     .then((response) => response.blob())
@@ -50,37 +49,26 @@ export const swapFace = async (template, sourceImage) => {
   const formData = new FormData();
 
   // Append the template image as a file
-  formData.append("template", templateBlob, "template.jpg"); // Use appropriate file extension for template
+  formData.append("template", templateBlob, "template.jpg");
 
-  // Append the source image file
-  formData.append("source", sourceImage); // Assuming sourceImage is a File object from the file input
+  // Append the source image file (the captured photo)
+  formData.append("source", sourceImage, "source.jpg");
 
-  // Log the formData entries with more details about the files
-  for (let [key, value] of formData.entries()) {
-    if (value instanceof File) {
-      console.log(
-        `${key}: [File] name=${value.name}, size=${value.size}, type=${value.type}`
-      );
-    } else {
-      console.log(`${key}: ${value}`);
-    }
-  }
+  formData.append("template_path", template_path)
 
   try {
-    // Send the POST request to the Flask server
     const response = await axios.post(
-      "http://127.0.0.1:5000/api/swap",
+      "http://127.0.0.1:5000/api/swap", // Flask server URL
       formData,
       {
         headers: {
-          "Content-Type": "multipart/form-data", // Indicate that we are sending files
+          "Content-Type": "multipart/form-data",
         },
       }
     );
 
-    // Check if the response contains the swapped image
+    // If the response contains the swapped image as base64
     if (response.data.image) {
-      // Convert the base64 image to an image URL
       const swappedImageUrl = `data:image/jpeg;base64,${response.data.image}`;
       return swappedImageUrl;
     } else {

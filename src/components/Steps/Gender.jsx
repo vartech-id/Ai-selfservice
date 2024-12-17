@@ -4,6 +4,7 @@ import { fetchTemplates } from "../../server/api";
 const Gender = () => {
   const [gender, setGender] = useState(localStorage.getItem("gender") || null);
   const [templates, setTemplates] = useState([]);
+  const [selectedTemplate, setSelectedTempalte] = useState(null);
 
   // Save gender selection to state and localStorage
   const saveGender = (selectedGender) => {
@@ -27,8 +28,9 @@ const Gender = () => {
     loadTemplates();
   }, [gender]);
 
-  const templateSelected = (filename) => {
-    localStorage.setItem("selectedTemplate", filename);
+  const templateSelected = (imageUrl) => {
+    localStorage.setItem("selectedTemplate", imageUrl);
+    setSelectedTempalte(imageUrl);
   };
 
   return (
@@ -57,7 +59,7 @@ const Gender = () => {
                 src={template.imageUrl} // Use the imageUrl from the API
                 alt="template"
                 className="w-44 h-auto cursor-pointer"
-                onClick={() => templateSelected(template.filename)}
+                onClick={() => templateSelected(template.imageUrl)}
               />
             ))}
           </div>
@@ -65,6 +67,13 @@ const Gender = () => {
       ) : (
         <p>No templates available.</p>
       )}
+
+      {selectedTemplate ? (
+        <div>
+          <h2>Selected Template:</h2>
+          <img src={selectedTemplate} alt="selected template" className="w-40" />
+        </div>
+      ) : null}
     </div>
   );
 };

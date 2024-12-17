@@ -7,6 +7,9 @@ const CameraCapture = () => {
   const [capturedPhoto, setCapturedPhoto] = useState(null);
   const [isVideoVisible, setIsVideoVisible] = useState(true);
 
+  console.log(capturedPhoto);
+  
+
   // Start the camera feed
   const startCamera = async () => {
     try {
@@ -24,11 +27,9 @@ const CameraCapture = () => {
     const context = canvas.getContext("2d");
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    canvas.toBlob(async (blob) => {
-      const imageUrl = URL.createObjectURL(blob);
-      setCapturedPhoto(imageUrl);
-      localStorage.setItem("capturedPhoto", imageUrl);
-      await handleSwapFace(blob);
+    canvas.toBlob((blob) => {
+      setCapturedPhoto(blob); // Set the blob directly, not the image URL
+      localStorage.setItem("capturedPhoto", URL.createObjectURL(blob)); // You can still store the URL for preview
     }, "image/jpeg");
 
     setIsVideoVisible(false);
@@ -36,9 +37,11 @@ const CameraCapture = () => {
 
   // Handle face swap API
   const handleSwapFace = async (sourceImageBlob) => {
-    const templateUrl = "path/to/default/template.jpg";
+    const selectedTemplate = localStorage.getItem("selectedTemplate");
+    const templatePath = localStorage.getItem("gender")
+
     try {
-      const swappedImageUrl = await swapFace(templateUrl, sourceImageBlob);
+      const swappedImageUrl = await swapFace(selectedTemplate, sourceImageBlob, templatePath);
       if (swappedImageUrl) {
         setCapturedPhoto(swappedImageUrl);
         localStorage.setItem("swappedPhoto", swappedImageUrl);
@@ -55,7 +58,7 @@ const CameraCapture = () => {
     startCamera(); // Restart the camera feed
   };
 
-  const selectedTemplate = localStorage.getItem("selectedTemplate")
+  const selectedTemplate = localStorage.getItem("selectedTemplate");
 
   return (
     <div>
@@ -78,12 +81,14 @@ const CameraCapture = () => {
         <div>
           <h3>Captured Photo</h3>
           <img
-            src={capturedPhoto}
+            src={URL.createObjectURL(capturedPhoto)} // Use Object URL for previewing the Blob
             alt="Captured"
             className="w-1/2 h-auto m-auto"
           />
         </div>
       )}
+
+      <button onClick={() => handleSwapFace(capturedPhoto)}>Swap Face</button>
     </div>
   );
 };
