@@ -80,7 +80,7 @@ def get_images(ws, prompt):
 
 # Function to load the workflow configuration
 def load_workflow():
-    with open("main.json", "r", encoding="utf-8") as f:
+    with open("fswap.json", "r", encoding="utf-8") as f:
         return json.load(f)  # Loads the workflow from a JSON file and returns it as a Python dictionary
 
 # Function to update the workflow with the selected template and source image paths
@@ -131,49 +131,48 @@ def get_image():
 
     return jsonify({"error": "Image not found."}), 404
 
-# Flask route to handle the face swap operation
 @app.route('/api/swap', methods=['POST'])
 def swap_face():
     """Perform the face swap operation."""
-    # Retrieve the template, source image, and template path from the request
-    template = request.form.get('template')
+    template = request.files.get('template')
     source = request.files.get('source')
-    template_path = request.form.get('template_path')  # Full path to the template directory
+    print(f"Allowed methods: {request.url_rule.methods}") 
 
-    # Validate that the necessary data is present
-    if not template or not source or not template_path:
-        return jsonify({'error': 'Missing template or source image'}), 400  # Return an error if data is missing
+    # Log the details to ensure Flask is receiving the files
+    if not template or not source:
+        app.logger.error(f'Missing files: template={template} source={source}')
+        return jsonify({'error': 'Missing template or source image'}), 400
 
-    # Construct the full path to the template image
-    template_full_path = os.path.join(BASE_ASSET_DIR, template_path, template)
-    
-    # Save the uploaded source image to a temporary file
-    temp_dir = tempfile.gettempdir()
-    source_path = os.path.join(temp_dir, f"source_{uuid.uuid4()}.jpg")
-    source.save(source_path)  # Save the source image to a temporary file
+    # Log file details (name, size, and type)
+    app.logger.info(f'Received template: {template.filename}, size: {template.content_length}, type: {template.mimetype}')
+    app.logger.info(f'Received source: {source.filename}, size: {source.content_length}, type: {source.mimetype}')
 
-    # Load the workflow configuration
+    # Save files (temporary path)
+    template_path = os.path.join(BASE_ASSET_DIR, template.filename)
+    source_path = os.path.join(tempfile.gettempdir(), f"source_{uuid.uuid4()}.jpg")
+
+    # Save the files to disk
+    template.save(template_path)
+    source.save(source_path)
+
+    # Log the paths where the files are saved
+    app.logger.info(f'Template saved at: {template_path}')
+    app.logger.info(f'Source saved at: {source_path}')
+
     workflow = load_workflow()
-    # Update the workflow with the selected template and source image paths
-    updated_workflow = update_workflow(workflow, template_full_path, source_path)
+    updated_workflow = update_workflow(workflow, template_path, source_path)
 
-    # Establish a WebSocket connection to the backend server
     ws = websocket.WebSocket()
     ws.connect(f"ws://{SERVER_ADDRESS}/ws?clientId={CLIENT_ID}")
-    
-    # Retrieve the generated images from the backend
     images = get_images(ws, updated_workflow)
 
-    # Clean up by removing the temporary source image file
-    os.remove(source_path)
-
-    # If images are returned, return the first generated image as a base64-encoded string
+    # For simplicity, we'll just return the first image
     for node_id, image_data_list in images.items():
         if image_data_list:
-            image_data = image_data_list[0]  # Get the first image in the list
-            return jsonify({'image': base64.b64encode(image_data).decode('utf-8')})  # Return the image as base64
+            image_data = image_data_list[0]
+            return jsonify({'image': base64.b64encode(image_data).decode('utf-8')})
 
-    return jsonify({'error': 'No image generated'}), 400  # If no image is generated, return an error
+    return jsonify({'error': 'No image generated'}), 400
 
 # Run the Flask application
 if __name__ == '__main__':

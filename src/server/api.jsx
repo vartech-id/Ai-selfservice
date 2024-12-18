@@ -31,7 +31,9 @@ export const fetchTemplates = async (gender) => {
 //   return URL.createObjectURL(response.data);
 // };
 
-export const swapFace = async (template, sourceImage, template_path) => {
+export const swapFace = async (template, sourceImage) => {
+  const formData = new FormData();
+
   // Fetch the template image as a Blob
   const templateBlob = await fetch(template)
     .then((response) => response.blob())
@@ -45,20 +47,13 @@ export const swapFace = async (template, sourceImage, template_path) => {
     return null;
   }
 
-  // Create a FormData object to send both template (as file) and source image
-  const formData = new FormData();
-
-  // Append the template image as a file
+  // Create FormData for both template and source images
   formData.append("template", templateBlob, "template.jpg");
-
-  // Append the source image file (the captured photo)
   formData.append("source", sourceImage, "source.jpg");
-
-  formData.append("template_path", template_path)
 
   try {
     const response = await axios.post(
-      "http://127.0.0.1:5000/api/swap", // Flask server URL
+      `${API_BASE_URL}/swap`, // Flask server URL
       formData,
       {
         headers: {
