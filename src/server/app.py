@@ -100,8 +100,8 @@ def list_images(folder_path):
     ]
     
 # API endpoint to list images in a specific folder
-@app.route('/api/images', methods=['GET'])
-def get_images():
+@app.route('/api/templates', methods=['GET'])
+def get_templates():
     folder = request.args.get('folder', '').strip()
     if not folder:
         return jsonify({"error": "Folder parameter is required."}), 400
@@ -117,8 +117,8 @@ def get_images():
     return jsonify(images)
 
 # API endpoint to fetch a specific image
-@app.route('/api/image', methods=['GET'])
-def get_image():
+@app.route('/api/template', methods=['GET'])
+def get_template():
     filepath = request.args.get('filepath', '').strip()
     if not filepath:
         return jsonify({"error": "Filepath parameter is required."}), 400
@@ -143,9 +143,9 @@ def swap_face():
         app.logger.error(f'Missing files: template={template} source={source}')
         return jsonify({'error': 'Missing template or source image'}), 400
 
-    # Log file details (name, size, and type)
-    app.logger.info(f'Received template: {template.filename}, size: {template.content_length}, type: {template.mimetype}')
-    app.logger.info(f'Received source: {source.filename}, size: {source.content_length}, type: {source.mimetype}')
+    # Log file details
+    app.logger.info(f'Received template: {template.filename}')
+    app.logger.info(f'Received source: {source.filename}')
 
     # Save files (temporary path)
     template_path = os.path.join(BASE_ASSET_DIR, template.filename)

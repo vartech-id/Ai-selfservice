@@ -8,7 +8,6 @@ const CameraCapture = () => {
   const [isVideoVisible, setIsVideoVisible] = useState(true);
 
   console.log(capturedPhoto);
-  
 
   // Start the camera feed
   const startCamera = async () => {
@@ -37,11 +36,14 @@ const CameraCapture = () => {
 
   // Handle face swap API
   const handleSwapFace = async (sourceImageBlob) => {
-    const selectedTemplate = localStorage.getItem("selectedTemplate");
-    const templatePath = localStorage.getItem("gender")
+    const templateUrl = localStorage.getItem("selectedTemplate"); // This should be the URL
+
+    const sourceFile = new File([sourceImageBlob], "source.jpg", {
+      type: "image/jpeg",
+    });
 
     try {
-      const swappedImageUrl = await swapFace(selectedTemplate, sourceImageBlob, templatePath);
+      const swappedImageUrl = await swapFace(templateUrl, sourceFile);
       if (swappedImageUrl) {
         setCapturedPhoto(swappedImageUrl);
         localStorage.setItem("swappedPhoto", swappedImageUrl);
