@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { swapFace } from "../../server/api";
+import { swapFace, saveUserData } from "../../server/api";
 
 const CameraCapture = () => {
   const videoRef = useRef(null);
@@ -62,13 +62,32 @@ const CameraCapture = () => {
 
   const selectedTemplate = localStorage.getItem("selectedTemplate");
 
+  const handleUserData = async () => {
+    const name = localStorage.getItem("name");
+    const phone = localStorage.getItem("phone");
+
+    const userData = {
+      name: name,
+      phone: phone,
+    };
+
+    const result = await saveUserData(userData);
+
+    if (result) {
+      console.log("User data saved:", result);
+    } else {
+      console.error("Failed to save user data");
+    }
+  };
+
   return (
-    <div>
-      <h1>{selectedTemplate}</h1>
+    <div className="text-center">
+      {/* <h1>{selectedTemplate}</h1> */}
+      <h1 className="text-white text-[5em] font-bold">Choose Your AI</h1>
       <h2>Camera Capture</h2>
 
       {isVideoVisible && (
-        <video ref={videoRef} autoPlay className="w-screen h-screen" />
+        <video ref={videoRef} autoPlay className="w-[100%] h-[400px]" />
       )}
 
       <button onClick={startCamera}>Start Camera</button>
@@ -77,7 +96,7 @@ const CameraCapture = () => {
       {/* Cancel button */}
       <button onClick={handleCancel}>Cancel</button>
 
-      <canvas ref={canvasRef} className="hidden" />
+      <canvas ref={canvasRef} className="hidden bg-white" />
 
       {capturedPhoto && (
         <div>
@@ -91,6 +110,8 @@ const CameraCapture = () => {
       )}
 
       <button onClick={() => handleSwapFace(capturedPhoto)}>Swap Face</button>
+
+      <button onClick={() => handleUserData()}>Save Data</button>
     </div>
   );
 };

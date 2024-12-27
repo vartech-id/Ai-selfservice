@@ -4,7 +4,9 @@ const API_BASE_URL = "http://127.0.0.1:5000/api";
 
 export const fetchTemplates = async (gender) => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/templates?folder=${gender}`);
+    const response = await axios.get(
+      `${API_BASE_URL}/templates?folder=${gender}`
+    );
     const filenames = response.data;
 
     return filenames.map((filename) => ({
@@ -52,6 +54,28 @@ export const swapFace = async (templateUrl, sourceImage) => {
     }
   } catch (error) {
     console.error("Error in swapFace:", error);
+    return null;
+  }
+};
+
+export const saveUserData = async (userData) => {
+  console.log("api triggered ", userData);
+
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/save-user-data`,
+      userData
+    );
+
+    if (response.status === 200) {
+      console.log("User data saved sucessfully!");
+      return response.data;
+    } else {
+      console.error("Error saving user data");
+      return null;
+    }
+  } catch (error) {
+    console.error("Error in saveUserData:", error);
     return null;
   }
 };

@@ -9,9 +9,12 @@ import io
 import base64
 import cv2
 import tempfile
+import qrcode.constants
 import websocket
 from flask_cors import CORS
 from urllib.parse import unquote
+import sqlite3
+import qrcode
 
 # Initialize the Flask app
 app = Flask(__name__)
@@ -173,6 +176,48 @@ def swap_face():
             return jsonify({'image': base64.b64encode(image_data).decode('utf-8')})
 
     return jsonify({'error': 'No image generated'}), 400
+
+# Save user data to SQLite Database
+@app.route('/api/save-user-data', methods=['POST'])
+def save_user_data():
+    try:
+        user_data = request.json
+        name = user_data.get('name')
+        phone = user_data.get('phone')
+        
+        app.logger.info(f'user data: {user_data}')
+        app.logger.info(f'name: {name}')
+        app.logger.info(f'phone: {phone}')
+        
+        if not name or not phone:
+            return jsonify({"message": "Missing name or email"}), 400
+
+        # Connect to SQLite database
+        conn = sqlite3.connect('faceswap.db')
+        cursor = conn.cursor()
+
+        # Insert user data into the database
+        cursor.execute("CREATE TABLE IF NOT EXISTS user_table (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, phone INTEGER NOT NULL)")
+        cursor.execute("INSERT INTO user_table (name, phone) VALUES (?, ?)", (name, phone))
+        conn.commit()
+
+        # Close the connection
+        conn.close()
+
+        return jsonify({"message": "User data saved successfully!"}), 200
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({"message": "Failed to save user data"}), 500
+    
+qr = qrcode.QRCode(
+    version=1,
+    error_correction=qrcode.constants.ERROR_CORRECT_L,
+    box_size=10,
+    border=4
+)
+
+img = qr.add_data("https://blog.metaco.gg/wp-content/uploads/2023/07/gusion-mobile-legends.jpg")
+img = qr.make_image()
 
 # Run the Flask application
 if __name__ == '__main__':
