@@ -1,35 +1,44 @@
-import React from "react";
+import React, { useState } from "react";
 
 // Images
-import men from "../../assets/men/Expo_0001.jpg";
-import hijab from "../../assets/women/hijab/sulawesi.png";
-import non_hijab from "../../assets/women/non-hijab/ai_00323_.png";
+// 1. Upload di folder public
+// 2. E.G: import men from "/nama_file.png";
+import men from "/male.png";
+import hijab from "/female_hijab.png";
+import non_hijab from "/female.png";
 
 const Gender = () => {
+  const [selectedGender, setSelectedGender] = useState("");
+
+  const genders = [
+    { key: "men", src: men, alt: "Men" },
+    { key: "women/hijab", src: hijab, alt: "Women with Hijab" },
+    { key: "women/non-hijab", src: non_hijab, alt: "Women without Hijab" },
+  ];
+
   // Save gender selection to state and localStorage
   const saveGender = (selectedGender) => {
+    setSelectedGender(selectedGender);
     localStorage.setItem("gender", selectedGender);
   };
 
   return (
-    <div className="w-full grid mt-[22rem] text-center">
+    <div className="w-full text-center">
       <h1 className="text-white text-[5em] font-bold">Choose Your Gender</h1>
-      <div className="flex mt-24 mx-auto space-x-10">
-        <img
-          className="gender_img"
-          src={men}
-          onClick={() => saveGender("men")}
-        />
-        <img
-          className="gender_img"
-          src={hijab}
-          onClick={() => saveGender("women/hijab")}
-        />
-        <img
-          className="gender_img"
-          src={non_hijab}
-          onClick={() => saveGender("women/non-hijab")}
-        />
+      <div className="flex mt-24 mx-auto space-x-10 justify-center items-center">
+        {genders.map((gender) => (
+          <img
+            key={gender.key}
+            className={`${
+              selectedGender === gender.key
+                ? "border-[1em] border-yellow-500 w-[340px]"
+                : "w-[300px]"
+            }`}
+            src={gender.src}
+            alt={gender.alt}
+            onClick={() => saveGender(gender.key)}
+          />
+        ))}
       </div>
     </div>
   );

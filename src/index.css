@@ -6,6 +6,11 @@
   background-image: url("assets/ui/bg.png");
 }
 
-.gender_img {
-  @apply w-[300px]
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Hide scrollbar in IE and Edge */
+  scrollbar-width: none;  /* Hide scrollbar in Firefox */
 }

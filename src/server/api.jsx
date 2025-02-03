@@ -79,3 +79,63 @@ export const saveUserData = async (userData) => {
     return null;
   }
 };
+
+export const exportTableToCSV = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/export`, {
+      responseType: "blob", // To handle file download
+    });
+
+    // Create a downloadable link for the file
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "user_table.csv");
+    document.body.appendChild(link);
+    link.click();
+    link.parentNode.removeChild(link);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error exporting table:", error);
+    return { success: false, error };
+  }
+};
+
+export const fetchPrinters = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/printer/config`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching printers:", error);
+    throw error;
+  }
+};
+
+export const updatePrinterConfig = async (config) => {
+  try {
+    const response = await axios.put(`${API_BASE_URL}/printer/config`, config);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating printer config:", error);
+    throw error;
+  }
+};
+
+export const printImage = async (imageBlob) => {
+  const formData = new FormData();
+  formData.append("image", imageBlob, "image.jpg");
+
+  try {
+    const response = await axios.post(`${API_BASE_URL}/printer/print`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error("Error printing image:", error);
+    throw error;
+  }
+};

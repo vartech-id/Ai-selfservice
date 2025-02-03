@@ -19,8 +19,6 @@ const StepForm = ({ steps, resetFormData }) => {
 
   const dynamicButtonText = stepIndex === 0 ? "Start" : "Next";
 
-  console.log(stepIndex);
-
   return (
     <div>
       {steps[stepIndex]}

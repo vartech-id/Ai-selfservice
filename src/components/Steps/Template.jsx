@@ -3,6 +3,7 @@ import { fetchTemplates } from "../../server/api";
 
 const Template = () => {
   const [templates, setTemplates] = useState([]);
+  const [selectedIndex, setSelectedIndex] = useState(null); // Track the selected image
 
   useEffect(() => {
     const gender = localStorage.getItem("gender");
@@ -19,18 +20,27 @@ const Template = () => {
     loadTemplates();
   }, []);
 
+  // Handle image click to update selectedIndex
+  const handleImageClick = (index) => {
+    setSelectedIndex(index);
+  };
+
   return (
-    <div className="mt-[24rem]">
+    <div className="px-4">
       {templates != null ? (
         <div className="text-center">
           <h1 className="text-white text-[5em] font-bold">Choose Your AI</h1>
-          <div className="flex items-center justify-center gap-x-10 overflow-x-scroll mt-[6rem] mb-[18rem]">
+          <div className="flex items-center justify-start gap-x-10 overflow-x-auto mt-[6rem] scrollbar-hide">
             {templates.map((template, index) => (
               <img
                 key={index}
                 src={template.imageUrl}
                 alt="templates"
-                className="gender_img"
+                className={`${selectedIndex === index
+                    ? "border-[1em] border-yellow-500 w-[320px]"
+                    : "w-[300px]"
+                  } object-contain`}
+                onClick={() => { handleImageClick(index); localStorage.setItem("selectedTemplate", template.imageUrl) }}
               />
             ))}
           </div>

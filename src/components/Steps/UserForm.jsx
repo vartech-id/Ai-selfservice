@@ -15,21 +15,19 @@ const UserForm = () => {
     const value = e.target.value;
     setName(value);
     localStorage.setItem("name", value);
-    console.log(value);
   };
 
   const onPhoneChange = (e) => {
     const value = e.target.value;
     setPhone(value);
     localStorage.setItem("phone", value);
-    console.log(value);
   };
 
   localStorage.setItem("name", name);
   localStorage.setItem("phone", phone);
 
   return (
-    <div className="w-full flex flex-col items-center justify-center mt-[40rem] space-y-[6rem] mb-[10em]">
+    <div className="w-full flex flex-col items-center justify-center space-y-[6rem]">
       <div className="text-center">
         <h1 className="text-white text-[5em] font-bold">Name</h1>
         <input
