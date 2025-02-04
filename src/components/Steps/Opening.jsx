@@ -1,4 +1,3 @@
-import React from "react";
 import tap from "../../assets/ui/tap.png";
 
 const Opening = ({ onStart }) => {

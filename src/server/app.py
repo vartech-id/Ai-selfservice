@@ -421,7 +421,7 @@ def save_user_data():
     try:
         user_data = request.json
         name = user_data.get('name')
-        phone = user_data.get('phone')
+        phone = str(user_data.get('phone'))
         
         if not name or not phone:
             return jsonify({"message": "Missing name or phone"}), 400
@@ -429,8 +429,8 @@ def save_user_data():
         conn = sqlite3.connect('faceswap.db')
         cursor = conn.cursor()
 
-        cursor.execute("CREATE TABLE IF NOT EXISTS user_table (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, phone INTEGER NOT NULL)")
-        cursor.execute("INSERT INTO user_table (name, phone) VALUES (?, ?)", (name, phone))
+        cursor.execute("CREATE TABLE IF NOT EXISTS user_table (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, phone TEXT NOT NULL)")
+        cursor.execute("INSERT INTO user_table (name, phone) VALUES (?, ?)", (name, "0" + phone))
         conn.commit()
         conn.close()
 

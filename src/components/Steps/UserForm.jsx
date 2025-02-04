@@ -1,16 +1,4 @@
-import React, { useEffect, useState } from "react";
-
-const UserForm = () => {
-  const [name, setName] = useState(localStorage.getItem("name") || "");
-  const [phone, setPhone] = useState(localStorage.getItem("phone") || "");
-
-  useEffect(() => {
-    const savedName = localStorage.getItem("name");
-    const savedPhone = localStorage.getItem("phone");
-    if (savedName) setName(savedName);
-    if (savedPhone) setPhone(savedPhone);
-  }, []);
-
+const UserForm = ({ name, setName, phone, setPhone }) => {
   const onNameChange = (e) => {
     const value = e.target.value;
     setName(value);

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { swapFace } from "../../server/api";
 
 const CameraCapture = ({ goBack, goTo }) => {
@@ -7,14 +7,43 @@ const CameraCapture = ({ goBack, goTo }) => {
   const [capturedPhoto, setCapturedPhoto] = useState(null);
   const [isVideoVisible, setIsVideoVisible] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCountingDown, setIsCountingDown] = useState(false);
+  const [countdown, setCountdown] = useState(3);
 
-  // Start the camera feed
+  useEffect(() => {
+    startCamera();
+    return () => {
+      if (videoRef.current?.srcObject) {
+        const tracks = videoRef.current.srcObject.getTracks();
+        tracks.forEach(track => track.stop());
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    let countdownInterval;
+    if (isCountingDown && countdown > 0) {
+      countdownInterval = setInterval(() => {
+        setCountdown(prev => prev - 1);
+      }, 1000);
+    } else if (countdown === 0) {
+      onCapture();
+      setIsCountingDown(false);
+      setCountdown(3); //change the countdown here//
+    }
+
+    return () => {
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
+      }
+    };
+  }, [isCountingDown, countdown]);
+
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       videoRef.current.srcObject = stream;
 
-      // Ensure the canvas matches the video dimensions
       const video = videoRef.current;
       video.onloadedmetadata = () => {
         canvasRef.current.width = video.videoWidth;
@@ -25,7 +54,10 @@ const CameraCapture = ({ goBack, goTo }) => {
     }
   };
 
-  // Capture photo from the video feed
+  const startCountdown = () => {
+    setIsCountingDown(true);
+  };
+
   const onCapture = () => {
     const canvas = canvasRef.current;
     const video = videoRef.current;
@@ -33,24 +65,21 @@ const CameraCapture = ({ goBack, goTo }) => {
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     canvas.toBlob((blob) => {
-      setCapturedPhoto(blob); // Set the blob directly, not the image URL
-      localStorage.setItem("capturedPhoto", URL.createObjectURL(blob)); // You can still store the URL for preview
+      setCapturedPhoto(blob);
+      localStorage.setItem("capturedPhoto", URL.createObjectURL(blob));
     }, "image/jpeg");
 
     setIsVideoVisible(false);
   };
 
-  // Handle face swap API
   const handleSwapFace = async (sourceImageBlob) => {
-    const templateUrl = localStorage.getItem("selectedTemplate"); // This should be the URL
-
+    const templateUrl = localStorage.getItem("selectedTemplate");
     const sourceFile = new File([sourceImageBlob], "source.jpg", {
       type: "image/jpeg",
     });
 
     setIsLoading(true);
 
-    // Solusi: pindahin goTo ke finally
     try {
       const swappedImageUrl = await swapFace(templateUrl, sourceFile);
       if (swappedImageUrl) {
@@ -65,11 +94,10 @@ const CameraCapture = ({ goBack, goTo }) => {
     }
   };
 
-  // Handle cancel action
   const handleCancel = () => {
-    setCapturedPhoto(null); // Reset captured photo
-    setIsVideoVisible(true); // Re-enable video feed
-    startCamera(); // Restart the camera feed
+    setCapturedPhoto(null);
+    setIsVideoVisible(true);
+    startCamera();
   };
 
   return (
@@ -85,45 +113,64 @@ const CameraCapture = ({ goBack, goTo }) => {
           </h1>
 
           {isVideoVisible && (
-            <video ref={videoRef} autoPlay className="w-4/5 h-auto m-auto" />
+            <div className="relative">
+              <video ref={videoRef} autoPlay className="w-4/5 h-auto m-auto" />
+              {isCountingDown && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="flex items-center justify-center w-40 h-40 bg-black bg-opacity-50 rounded-full">
+                    <span className="text-white text-[8em] font-bold animate-pulse">
+                      {countdown}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
 
           <canvas ref={canvasRef} className="hidden bg-white" />
 
-          {isLoading
-            ? ""
-            : capturedPhoto && (
-                <img
-                  src={URL.createObjectURL(capturedPhoto)}
-                  alt="Captured"
-                  className="w-4/5 h-auto m-auto"
-                />
-              )}
-
-          <button
-            onClick={capturedPhoto === null ? onCapture : handleCancel}
-            className="bg-[#BF9A30] px-14 rounded-full uppercase font-bold text-white text-[2.8em]"
-          >
-            {capturedPhoto === null ? "Capture Photo" : "Cancel"}
-          </button>
+          {!isVideoVisible && capturedPhoto && (
+            <img
+              src={URL.createObjectURL(capturedPhoto)}
+              alt="Captured"
+              className="w-4/5 h-auto m-auto"
+            />
+          )}
 
           <div className="space-x-6">
-            <button
-              onClick={goBack}
-              className="bg-[#BF9A30] px-14 rounded-full uppercase font-bold text-white text-[2.8em]"
-            >
-              Back
-            </button>
-            <button
-              onClick={
-                capturedPhoto === null
-                  ? startCamera
-                  : () => handleSwapFace(capturedPhoto)
-              }
-              className="bg-[#BF9A30] px-14 rounded-full uppercase font-bold text-white text-[2.8em]"
-            >
-              {capturedPhoto === null ? "Start Camera" : "Swap Face"}
-            </button>
+            {isVideoVisible ? (
+              <>
+                <button
+                  onClick={goBack}
+                  className="bg-[#BF9A30] px-14 rounded-full uppercase font-bold text-white text-[2.8em]"
+                  disabled={isCountingDown}
+                >
+                  Back
+                </button>
+                <button
+                  onClick={startCountdown}
+                  className="bg-[#BF9A30] px-14 rounded-full uppercase font-bold text-white text-[2.8em]"
+                  disabled={isCountingDown}
+                >
+                  Capture
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={handleCancel}
+                  className="bg-[#BF9A30] px-14 rounded-full uppercase font-bold text-white text-[2.8em]"
+                >
+                  Retake
+                </button>
+                <button
+                  onClick={() => handleSwapFace(capturedPhoto)}
+                  className="bg-[#BF9A30] px-14 rounded-full uppercase font-bold text-white text-[2.8em]"
+                >
+                  Process
+                </button>
+              </>
+            )}
           </div>
         </>
       )}
