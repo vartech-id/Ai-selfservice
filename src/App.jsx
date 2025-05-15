@@ -28,26 +28,26 @@ const App = () => {
   }, []);
 
   // Save user data to database
-  const handleUserData = async () => {
-    const name = localStorage.getItem("name");
-    const phone = localStorage.getItem("phone");
+  // const handleUserData = async () => {
+  //   const name = localStorage.getItem("name");
+  //   const phone = localStorage.getItem("phone");
 
-    const userData = {
-      name: name,
-      phone: phone,
-    };
+  //   const userData = {
+  //     name: name,
+  //     phone: phone,
+  //   };
 
-    const result = await saveUserData(userData);
+  //   const result = await saveUserData(userData);
 
-    if (result) {
-      console.log("User data saved:", result);
+  //   if (result) {
+  //     console.log("User data saved:", result);
 
-      // Remove data from localStorage
-      localStorage.clear();
-    } else {
-      console.error("Failed to save user data");
-    }
-  };
+  //     // Remove data from localStorage
+  //     localStorage.clear();
+  //   } else {
+  //     console.error("Failed to save user data");
+  //   }
+  // };
 
   const start = () => {
     setStarted(true);
@@ -69,19 +69,19 @@ const App = () => {
   const isNextDisabled = step === 1 && (!name.trim() || !phone.trim());
 
   const steps = [
-    <UserForm
-      key={1}
-      name={name}
-      setName={setName}
-      phone={phone}
-      setPhone={setPhone}
-      onNext={nextStep}
-      onSaveUserData={handleUserData}
-    />,
-    <Gender key={2} onNext={nextStep} onBack={backStep} />,
-    <Template key={3} onNext={nextStep} onBack={backStep} />,
-    <Capture key={4} goTo={nextStep} goBack={backStep} />,
-    <Result key={5} />,
+    // <UserForm
+    //   key={1}
+    //   name={name}
+    //   setName={setName}
+    //   phone={phone}
+    //   setPhone={setPhone}
+    //   onNext={nextStep}
+    //   onSaveUserData={handleUserData}
+    // />,
+    <Gender key={1} onNext={nextStep} onBack={backStep} />,
+    <Template key={2} onNext={nextStep} onBack={backStep} />,
+    <Capture key={3} goTo={nextStep} goBack={backStep} />,
+    <Result key={4} />,
   ];
 
   return (
@@ -104,7 +104,7 @@ const App = () => {
                     {steps[step - 1]}
 
                     {/* Render current step based on step index */}
-                    {step < 4 ? (
+                    {step < 3 ? (
                       <div className="text-[2.8em] space-x-10 w-full flex justify-center items-center mb-40 mt-20">
                         <button
                           onClick={backStep}
