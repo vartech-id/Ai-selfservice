@@ -54,9 +54,9 @@ const App = () => {
   };
 
   const nextStep = () => {
-    if (step === 1) {
-      handleUserData();
-    }
+    // if (step === 1) {
+    //   handleUserData();
+    // }
 
     setStep((prevStep) => (prevStep < steps.length ? prevStep + 1 : prevStep));
   };
