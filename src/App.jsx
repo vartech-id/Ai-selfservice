@@ -115,9 +115,9 @@ const App = () => {
                         </button>
                         <button
                           onClick={nextStep}
-                          disabled={isNextDisabled || step === steps.length}
+                          disabled={step === steps.length}
                           className={`px-14 rounded-full uppercase font-bold text-white ${
-                            isNextDisabled || step === steps.length
+                            step === steps.length
                               ? "bg-[#BF9A30]/50 cursor-not-allowed"
                               : "bg-[#BF9A30]"
                           }`}
