@@ -49,6 +49,10 @@ const App = () => {
   //   }
   // };
 
+  const something = () => {
+    console.log("something");
+  };
+
   const start = () => {
     setStarted(true);
   };
