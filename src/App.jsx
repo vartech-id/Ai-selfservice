@@ -19,44 +19,49 @@ const App = () => {
   // State for UserForm Component
   const [name, setName] = useState(localStorage.getItem("name") || "");
   const [phone, setPhone] = useState(localStorage.getItem("phone") || "");
+  const [email, setEmail] = useState(localStorage.getItem("email") || "");
 
   useEffect(() => {
     const savedName = localStorage.getItem("name");
     const savedPhone = localStorage.getItem("phone");
+    const savedEmail = localStorage.getItem("email");
     if (savedName) setName(savedName);
     if (savedPhone) setPhone(savedPhone);
+    if (savedEmail) setEmail(savedEmail);
   }, []);
 
   // Save user data to database
-  // const handleUserData = async () => {
-  //   const name = localStorage.getItem("name");
-  //   const phone = localStorage.getItem("phone");
+  const handleUserData = async () => {
+    const name = localStorage.getItem("name");
+    const phone = localStorage.getItem("phone");
+    const email = localStorage.getItem("email");
 
-  //   const userData = {
-  //     name: name,
-  //     phone: phone,
-  //   };
+    const userData = {
+      name: name,
+      phone: phone,
+      email: email,
+    };
 
-  //   const result = await saveUserData(userData);
+    const result = await saveUserData(userData);
 
-  //   if (result) {
-  //     console.log("User data saved:", result);
+    if (result) {
+      console.log("User data saved:", result);
 
-  //     // Remove data from localStorage
-  //     localStorage.clear();
-  //   } else {
-  //     console.error("Failed to save user data");
-  //   }
-  // };
+      // Remove data from localStorage
+      localStorage.clear();
+    } else {
+      console.error("Failed to save user data");
+    }
+  };
 
   const start = () => {
     setStarted(true);
   };
 
   const nextStep = () => {
-    // if (step === 1) {
-    //   handleUserData();
-    // }
+    if (step === 1) {
+      handleUserData();
+    }
 
     setStep((prevStep) => (prevStep < steps.length ? prevStep + 1 : prevStep));
   };
@@ -66,18 +71,21 @@ const App = () => {
   };
 
   // Disable Next button if any field in UserForm is empty
-  const isNextDisabled = step === 1 && (!name.trim() || !phone.trim());
+  const isNextDisabled =
+    step === 1 && (!name.trim() || !phone.trim() || !email.trim());
 
   const steps = [
-    // <UserForm
-    //   key={1}
-    //   name={name}
-    //   setName={setName}
-    //   phone={phone}
-    //   setPhone={setPhone}
-    //   onNext={nextStep}
-    //   onSaveUserData={handleUserData}
-    // />,
+    <UserForm
+      key={1}
+      name={name}
+      setName={setName}
+      phone={phone}
+      setPhone={setPhone}
+      email={email}
+      setEmail={setEmail}
+      onNext={nextStep}
+      onSaveUserData={handleUserData}
+    />,
     <Gender key={1} onNext={nextStep} onBack={backStep} />,
     <Template key={2} onNext={nextStep} onBack={backStep} />,
     <Capture key={3} goTo={nextStep} goBack={backStep} />,
@@ -115,12 +123,12 @@ const App = () => {
                         </button>
                         <button
                           onClick={nextStep}
-                          disabled={step === steps.length}
+                          disabled={step === steps.length || isNextDisabled}
                           className={`px-14 rounded-full uppercase font-bold text-white ${
                             step === steps.length
                               ? "bg-[#BF9A30]/50 cursor-not-allowed"
                               : "bg-[#BF9A30]"
-                          }`}
+                          } ${isNextDisabled ? "cursor-not-allowed bg-[#BF9A30]/70" : ""}`}
                         >
                           Next
                         </button>
@@ -139,8 +147,9 @@ const App = () => {
 
         <div
           onClick={() => {
-            setName("")
-            setPhone("")
+            setName("");
+            setPhone("");
+            setEmail("");
             localStorage.clear();
             setStarted(false);
             setStep(1);
