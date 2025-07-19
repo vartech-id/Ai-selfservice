@@ -13,8 +13,8 @@
     "inputs": {
       "enabled": true,
       "swap_model": "inswapper_128.onnx",
-      "facedetection": "retinaface_resnet50",
-      "face_restore_model": "codeformer-v0.1.0.pth",
+      "facedetection": "YOLOv5l",
+      "face_restore_model": "GFPGANv1.4.pth",
       "face_restore_visibility": 1,
       "codeformer_weight": 1,
       "detect_gender_input": "no",
@@ -50,7 +50,7 @@
     "inputs": {
       "filename_prefix": "ai",
       "images": [
-        "5",
+        "2",
         0
       ]
     },

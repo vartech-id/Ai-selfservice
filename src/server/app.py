@@ -36,7 +36,7 @@ DATABASE = 'faceswap.db'
 TABLE_NAME = 'user_table'
 
 # Sesuaikan pathnya
-BASE_ASSET_DIR = r"D:\Projects\AI FS\pvm\src\assets"
+BASE_ASSET_DIR = r"D:\Projects\AI SELF SERVICE\pvm\src\assets"
 SERVER_ADDRESS = "127.0.0.1:8188"
 CLIENT_ID = str(uuid.uuid4())
 
