@@ -9,33 +9,6 @@
       "title": "Template"
     }
   },
-  "2": {
-    "inputs": {
-      "enabled": true,
-      "swap_model": "inswapper_128.onnx",
-      "facedetection": "YOLOv5l",
-      "face_restore_model": "GFPGANv1.4.pth",
-      "face_restore_visibility": 1,
-      "codeformer_weight": 1,
-      "detect_gender_input": "no",
-      "detect_gender_source": "no",
-      "input_faces_index": "0",
-      "source_faces_index": "0",
-      "console_log_level": 1,
-      "input_image": [
-        "1",
-        0
-      ],
-      "source_image": [
-        "3",
-        0
-      ]
-    },
-    "class_type": "ReActorFaceSwap",
-    "_meta": {
-      "title": "ReActor 🌌 Fast Face Swap"
-    }
-  },
   "3": {
     "inputs": {
       "image": "+.jpeg",
@@ -50,13 +23,54 @@
     "inputs": {
       "filename_prefix": "ai",
       "images": [
-        "2",
+        "5",
         0
       ]
     },
     "class_type": "SaveImage",
     "_meta": {
       "title": "Save Image"
+    }
+  },
+  "5": {
+    "inputs": {
+      "enabled": true,
+      "swap_model": "inswapper_128.onnx",
+      "facedetection": "YOLOv5l",
+      "face_restore_model": "GFPGANv1.4.pth",
+      "face_restore_visibility": 1,
+      "codeformer_weight": 1,
+      "input_image": [
+        "3",
+        0
+      ],
+      "source_image": [
+        "1",
+        0
+      ],
+      "options": [
+        "6",
+        0
+      ]
+    },
+    "class_type": "ReActorFaceSwapOpt",
+    "_meta": {
+      "title": "ReActor 🌌 Fast Face Swap [OPTIONS]"
+    }
+  },
+  "6": {
+    "inputs": {
+      "input_faces_order": "large-small",
+      "input_faces_index": "0",
+      "detect_gender_input": "no",
+      "source_faces_order": "large-small",
+      "source_faces_index": "0",
+      "detect_gender_source": "no",
+      "console_log_level": 2
+    },
+    "class_type": "ReActorOptions",
+    "_meta": {
+      "title": "ReActor 🌌 Options"
     }
   }
 }
