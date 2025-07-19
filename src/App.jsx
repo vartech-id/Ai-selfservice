@@ -112,7 +112,7 @@ const App = () => {
                     {steps[step - 1]}
 
                     {/* Render current step based on step index */}
-                    {step < 3 ? (
+                    {step < 4 ? (
                       <div className="text-[2.8em] space-x-10 w-full flex justify-center items-center mb-40 mt-20">
                         <button
                           onClick={backStep}

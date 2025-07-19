@@ -22,7 +22,7 @@ const UserForm = ({ name, setName, phone, setPhone, email, setEmail }) => {
   localStorage.setItem("email", email);
 
   return (
-    <div className="w-full flex flex-col items-center justify-center space-y-[4rem]">
+    <div className="w-full flex flex-col items-center justify-center">
       <div className="text-center">
         <h1 className="text-white text-[5em] font-bold">Name</h1>
         <input
