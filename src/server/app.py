@@ -422,20 +422,15 @@ def save_user_data():
         user_data = request.json
         name = user_data.get('name')
         phone = str(user_data.get('phone'))
-        email = user_data.get('email', '')  # Default to empty string if not provided
         
         if not name or not phone:
             return jsonify({"message": "Missing name or phone"}), 400
 
-        # Email is required for new entries, but we'll handle empty ones for backward compatibility
-        if not email:
-            return jsonify({"message": "Email is required"}), 400
-
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
 
-        cursor.execute("CREATE TABLE IF NOT EXISTS user_table (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, phone TEXT NOT NULL, email TEXT NOT NULL)")
-        cursor.execute("INSERT INTO user_table (name, phone, email) VALUES (?, ?, ?)", (name, "0" + phone, email))
+        cursor.execute("CREATE TABLE IF NOT EXISTS user_table (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, phone TEXT NOT NULL)")
+        cursor.execute("INSERT INTO user_table (name, phone) VALUES (?, ?)", (name, "0" + phone))
         conn.commit()
         conn.close()
 
@@ -485,27 +480,12 @@ def init_database():
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
         
-        # Check if table exists and get its schema
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='user_table'")
-        table_exists = cursor.fetchone()
-        
-        if table_exists:
-            # Check if email column exists
-            cursor.execute("PRAGMA table_info(user_table)")
-            columns = [column[1] for column in cursor.fetchall()]
-            
-            if 'email' not in columns:
-                # Add email column to existing table
-                cursor.execute("ALTER TABLE user_table ADD COLUMN email TEXT DEFAULT ''")
-                print("Added email column to existing user_table")
-        
-        # Create table with email column if it doesn't exist
+        # Create table without email column
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS user_table (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
-                phone TEXT NOT NULL,
-                email TEXT NOT NULL
+                phone TEXT NOT NULL
             )
         """)
         conn.commit()
