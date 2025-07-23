@@ -54,9 +54,9 @@ const App = () => {
   };
 
   const nextStep = () => {
-    // if (step === 1) {
-    //   handleUserData();
-    // }
+    if (step === 1) {
+      handleUserData();
+    }
 
     setStep((prevStep) => (prevStep < steps.length ? prevStep + 1 : prevStep));
   };
@@ -66,8 +66,7 @@ const App = () => {
   };
 
   // Disable Next button if any field in UserForm is empty
-  const isNextDisabled =
-    step === 1 && (!name.trim() || !phone.trim());
+  const isNextDisabled = step === 1 && (!name.trim() || !phone.trim());
 
   const steps = [
     <UserForm
