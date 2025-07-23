@@ -74,113 +74,76 @@ def save_config():
 class ImagePrinter:
     @staticmethod
     def get_print_dimensions(print_size):
-        """
-        Convert print size string to dimensions in inches and pixels
-        Returns: tuple (width_inches, height_inches)
-        """
-        dimensions = {
-            "4x6": (4.0, 6.0),
-            "6x4": (6.0, 4.0)
-        }
-        return dimensions.get(print_size, (4.0, 6.0))  # Default to 4x6 if invalid size
+        dims = {"4x6": (4.0, 6.0), "6x4": (6.0, 4.0)}
+        return dims.get(print_size, (4.0, 6.0))
 
     @staticmethod
-    def print_image(image_path, printer_name, print_size="4x6", left_offset_percent=10):
+    def print_image(image_path, printer_name, print_size="4x6", left_offset_percent=0):
         """
-        Print image with adjustable left offset
-        left_offset_percent: 0 to 100, where 0 is centered (default) and 100 moves image fully right
+        Print image and fit it to the printer's REAL printable area.
+        left_offset_percent: 0 = centered, 100 = push as far right as possible
         """
+        hprinter = None
+        pdc = None
         try:
-            # Open the image
-            img = Image.open(image_path)
-            img = img.convert('RGB')  # Ensure RGB mode
-            
-            # Initialize printer
+            # 1. Open image
+            img = Image.open(image_path).convert("RGB")
+
+            # 2. Open printer / DC
             hprinter = win32print.OpenPrinter(printer_name)
-            printer_info = win32print.GetPrinter(hprinter, 2)
             pdc = win32ui.CreateDC()
             pdc.CreatePrinterDC(printer_name)
-            
-            # Get printer DPI and physical dimensions
-            printer_dpi_x = pdc.GetDeviceCaps(win32con.LOGPIXELSX)
-            printer_dpi_y = pdc.GetDeviceCaps(win32con.LOGPIXELSY)
-            physical_width = pdc.GetDeviceCaps(win32con.PHYSICALWIDTH)
-            physical_height = pdc.GetDeviceCaps(win32con.PHYSICALHEIGHT)
-            
-            # Get target dimensions in inches
-            target_width_inch, target_height_inch = ImagePrinter.get_print_dimensions(print_size)
-            
-            # Convert target dimensions to pixels at printer's DPI
-            target_width_px = int(target_width_inch * printer_dpi_x)
-            target_height_px = int(target_height_inch * printer_dpi_y)
-            
-            # Calculate the scaling factors
-            img_aspect = img.width / img.height
-            target_aspect = target_width_px / target_height_px
-            
-            # Determine new dimensions while preserving aspect ratio
+
+            # 3. Get REAL printable rectangle from driver
+            HORZRES = pdc.GetDeviceCaps(win32con.HORZRES)            # width you can draw in px
+            VERTRES = pdc.GetDeviceCaps(win32con.VERTRES)            # height you can draw in px
+            OFFX    = pdc.GetDeviceCaps(win32con.PHYSICALOFFSETX)    # left non-printable margin
+            OFFY    = pdc.GetDeviceCaps(win32con.PHYSICALOFFSETY)    # top non-printable margin
+
+            # 4. Fit image proportionally INSIDE HORZRES x VERTRES
+            img_aspect    = img.width / img.height
+            target_aspect = HORZRES / VERTRES
+
             if img_aspect > target_aspect:
-                # Image is wider than target - fit to width
-                new_width = target_width_px
-                new_height = int(target_width_px / img_aspect)
+                new_w = HORZRES
+                new_h = int(round(HORZRES / img_aspect))
             else:
-                # Image is taller than target - fit to height
-                new_height = target_height_px
-                new_width = int(target_height_px * img_aspect)
-            
-            # Resize image with high-quality resampling
-            resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-            
-            # Create a new image with the exact target size and white background
-            final_img = Image.new('RGB', (target_width_px, target_height_px), 'white')
-            
-            # Calculate centering offsets with adjustable left offset
-            max_x_offset = target_width_px - new_width
-            base_x_offset = max_x_offset // 2  # This would be the centered position
-            additional_offset = int((max_x_offset // 2) * (left_offset_percent / 100))
-            x_offset = base_x_offset + additional_offset
-            
-            y_offset = (target_height_px - new_height) // 2
-            
-            # Paste the resized image onto the white background
-            final_img.paste(resized_img, (x_offset, y_offset))
-            
-            # Convert to device-independent bitmap
-            dib = ImageWin.Dib(final_img)
-            
-            # Start print job
+                new_h = VERTRES
+                new_w = int(round(VERTRES * img_aspect))
+
+            resized = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+
+            # 5. Horizontal offset (relative to centered)
+            max_x_space   = HORZRES - new_w
+            base_center_x = max_x_space // 2
+            extra_shift   = int((max_x_space // 2) * (left_offset_percent / 100.0))
+            x_inside      = base_center_x + extra_shift
+            y_inside      = (VERTRES - new_h) // 2
+
+            # Final device coords
+            x1 = OFFX + x_inside
+            y1 = OFFY + y_inside
+            x2 = x1 + new_w
+            y2 = y1 + new_h
+
+            dib = ImageWin.Dib(resized)
+
+            # 6. Print
             pdc.StartDoc(image_path)
             pdc.StartPage()
-            
-            # Calculate margins for centering on page
-            margin_x = (physical_width - target_width_px) // 2
-            margin_y = (physical_height - target_height_px) // 2
-            
-            # Draw the image centered on the page
-            dib.draw(
-                pdc.GetHandleOutput(),
-                (
-                    margin_x,
-                    margin_y,
-                    margin_x + target_width_px,
-                    margin_y + target_height_px
-                )
-            )
-            
-            # Finish print job
+            dib.draw(pdc.GetHandleOutput(), (x1, y1, x2, y2))
             pdc.EndPage()
             pdc.EndDoc()
-            
+
             return True
-            
+
         except Exception as e:
-            print(f"Printing error: {str(e)}")
+            print(f"Printing error: {e}")
             return False
-            
         finally:
-            if 'pdc' in locals():
+            if pdc:
                 pdc.DeleteDC()
-            if 'hprinter' in locals():
+            if hprinter:
                 win32print.ClosePrinter(hprinter)
                 
 class HotFolderHandler(FileSystemEventHandler):
