@@ -71,8 +71,6 @@ def save_config():
     with open(CONFIG_FILE, 'w') as configfile:
         config.write(configfile)
 
-print logic "fix white border issues"
-
 class ImagePrinter:
     @staticmethod
     def get_print_dimensions(print_size):
