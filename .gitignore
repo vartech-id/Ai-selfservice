@@ -25,3 +25,5 @@ faceswap.db
 *.njsproj
 *.sln
 *.sw?
+src/assets/template.jpg
+public/hasil.png
