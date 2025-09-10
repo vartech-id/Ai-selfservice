@@ -11,7 +11,12 @@ node_modules
 dist
 dist-ssr
 *.local
-
+Hasil.png
+src/server/__pycache__
+public/hasil.png
+src/assets/template.jpg
+src/server/faceswap.db
+src/server/user_table.csv
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -22,6 +27,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-# Database
-*.db
+src/assets/template.jpg
+public/hasil.png
