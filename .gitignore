@@ -16,7 +16,7 @@ src/server/__pycache__
 public/hasil.png
 src/assets/template.jpg
 src/server/faceswap.db
-
+src/server/user_table.csv
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
