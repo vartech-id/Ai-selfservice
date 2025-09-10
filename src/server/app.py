@@ -36,9 +36,12 @@ DATABASE = 'faceswap.db'
 TABLE_NAME = 'user_table'
 
 # Sesuaikan pathnya
-BASE_ASSET_DIR = r"C:\Users\PHOTOBOOTH\Documents\self service\ready_to_use\faceswap-project_v1\faceswap-project\src\assets"
+BASE_ASSET_DIR = (Path(__file__).resolve().parents[1] / "assets").resolve()
 SERVER_ADDRESS = "127.0.0.1:8188"
 CLIENT_ID = str(uuid.uuid4())
+
+# optional safety:
+assert BASE_ASSET_DIR.exists(), f"Assets folder not found: {BASE_ASSET_DIR}"
 
 # Set up basic logging configuration
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
