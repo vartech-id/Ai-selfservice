@@ -5,14 +5,10 @@ import uuid
 import json
 import urllib.request
 import urllib.parse
-import io
 import base64
-import cv2
 import tempfile
-import qrcode.constants
 import websocket
 from flask_cors import CORS
-from urllib.parse import unquote
 import sqlite3
 import time
 import configparser
@@ -26,6 +22,7 @@ from PIL import Image, ImageWin
 import win32print
 import win32ui
 import win32con
+from qr_generation import generate_qr_png, QR_FILENAME, DEFAULT_GDRIVE_URL
 
 # Initialize the Flask app
 app = Flask(__name__)
@@ -39,9 +36,22 @@ TABLE_NAME = 'user_table'
 BASE_ASSET_DIR = (Path(__file__).resolve().parents[1] / "assets").resolve()
 SERVER_ADDRESS = "127.0.0.1:8188"
 CLIENT_ID = str(uuid.uuid4())
-
 # optional safety:
 assert BASE_ASSET_DIR.exists(), f"Assets folder not found: {BASE_ASSET_DIR}"
+
+#QR generation
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+QR_PATH = PROJECT_ROOT / "public" / QR_FILENAME
+@app.get("/api/qr")
+def get_qr():
+    # Always (re)generate before serving to ensure the latest link
+    generate_qr_png(data=DEFAULT_GDRIVE_URL, out_path=QR_PATH)
+    return send_file(QR_PATH, mimetype="image/png")
+
+@app.post("/api/qr/rebuild")
+def rebuild_qr():
+    p = generate_qr_png(data=DEFAULT_GDRIVE_URL, out_path=QR_PATH)
+    return jsonify({"ok": True, "path": str(p.relative_to(PROJECT_ROOT))})
 
 # Set up basic logging configuration
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -540,7 +550,8 @@ if __name__ == '__main__':
         
         # Initialize hot folder monitoring
         init_hot_folder(app)
-        
+        # Generate once on startup; keeps imports side-effect free
+        generate_qr_png(data=DEFAULT_GDRIVE_URL, out_path=QR_PATH)
         # Start the Flask application
         app.run(host='0.0.0.0', port=5000, debug=True)
     except Exception as e:

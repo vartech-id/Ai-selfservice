@@ -11,6 +11,9 @@ node_modules
 dist
 dist-ssr
 *.local
+Hasil.png
+src/server/__pycache__
+faceswap.db
 
 # Editor directories and files
 .vscode/*
