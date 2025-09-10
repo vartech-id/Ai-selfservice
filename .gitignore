@@ -13,7 +13,9 @@ dist-ssr
 *.local
 Hasil.png
 src/server/__pycache__
-faceswap.db
+public/hasil.png
+src/assets/template.jpg
+src/server/faceswap.db
 
 # Editor directories and files
 .vscode/*
