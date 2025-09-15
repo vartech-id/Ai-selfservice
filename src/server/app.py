@@ -5,14 +5,10 @@ import uuid
 import json
 import urllib.request
 import urllib.parse
-import io
 import base64
-import cv2
 import tempfile
-import qrcode.constants
 import websocket
 from flask_cors import CORS
-from urllib.parse import unquote
 import sqlite3
 import time
 import configparser
@@ -26,6 +22,7 @@ from PIL import Image, ImageWin
 import win32print
 import win32ui
 import win32con
+from qr_generation import generate_qr_png, QR_FILENAME, DEFAULT_GDRIVE_URL
 
 # Initialize the Flask app
 app = Flask(__name__)
@@ -39,9 +36,22 @@ TABLE_NAME = 'user_table'
 BASE_ASSET_DIR = (Path(__file__).resolve().parents[1] / "assets").resolve()
 SERVER_ADDRESS = "127.0.0.1:8188"
 CLIENT_ID = str(uuid.uuid4())
-
 # optional safety:
 assert BASE_ASSET_DIR.exists(), f"Assets folder not found: {BASE_ASSET_DIR}"
+
+#QR generation
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+QR_PATH = PROJECT_ROOT / "public" / QR_FILENAME
+@app.get("/api/qr")
+def get_qr():
+    # Always (re)generate before serving to ensure the latest link
+    generate_qr_png(data=DEFAULT_GDRIVE_URL, out_path=QR_PATH)
+    return send_file(QR_PATH, mimetype="image/png")
+
+@app.post("/api/qr/rebuild")
+def rebuild_qr():
+    p = generate_qr_png(data=DEFAULT_GDRIVE_URL, out_path=QR_PATH)
+    return jsonify({"ok": True, "path": str(p.relative_to(PROJECT_ROOT))})
 
 # Set up basic logging configuration
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -77,76 +87,113 @@ def save_config():
 class ImagePrinter:
     @staticmethod
     def get_print_dimensions(print_size):
-        dims = {"4x6": (4.0, 6.0), "6x4": (6.0, 4.0)}
-        return dims.get(print_size, (4.0, 6.0))
+        """
+        Convert print size string to dimensions in inches and pixels
+        Returns: tuple (width_inches, height_inches)
+        """
+        dimensions = {
+            "4x6": (4.0, 6.0),
+            "6x4": (6.0, 4.0)
+        }
+        return dimensions.get(print_size, (4.0, 6.0))  # Default to 4x6 if invalid size
 
     @staticmethod
-    def print_image(image_path, printer_name, print_size="4x6", left_offset_percent=0):
+    def print_image(image_path, printer_name, print_size="4x6", left_offset_percent=10):
         """
-        Print image and fit it to the printer's REAL printable area.
-        left_offset_percent: 0 = centered, 100 = push as far right as possible
+        Print image with adjustable left offset
+        left_offset_percent: 0 to 100, where 0 is centered (default) and 100 moves image fully right
         """
-        hprinter = None
-        pdc = None
         try:
-            # 1. Open image
-            img = Image.open(image_path).convert("RGB")
-
-            # 2. Open printer / DC
+            # Open the image
+            img = Image.open(image_path)
+            img = img.convert('RGB')  # Ensure RGB mode
+            
+            # Initialize printer
             hprinter = win32print.OpenPrinter(printer_name)
+            printer_info = win32print.GetPrinter(hprinter, 2)
             pdc = win32ui.CreateDC()
             pdc.CreatePrinterDC(printer_name)
-
-            # 3. Get REAL printable rectangle from driver
-            HORZRES = pdc.GetDeviceCaps(win32con.HORZRES)            # width you can draw in px
-            VERTRES = pdc.GetDeviceCaps(win32con.VERTRES)            # height you can draw in px
-            OFFX    = pdc.GetDeviceCaps(win32con.PHYSICALOFFSETX)    # left non-printable margin
-            OFFY    = pdc.GetDeviceCaps(win32con.PHYSICALOFFSETY)    # top non-printable margin
-
-            # 4. Fit image proportionally INSIDE HORZRES x VERTRES
-            img_aspect    = img.width / img.height
-            target_aspect = HORZRES / VERTRES
-
+            
+            # Get printer DPI and physical dimensions
+            printer_dpi_x = pdc.GetDeviceCaps(win32con.LOGPIXELSX)
+            printer_dpi_y = pdc.GetDeviceCaps(win32con.LOGPIXELSY)
+            physical_width = pdc.GetDeviceCaps(win32con.PHYSICALWIDTH)
+            physical_height = pdc.GetDeviceCaps(win32con.PHYSICALHEIGHT)
+            
+            # Get target dimensions in inches
+            target_width_inch, target_height_inch = ImagePrinter.get_print_dimensions(print_size)
+            
+            # Convert target dimensions to pixels at printer's DPI
+            target_width_px = int(target_width_inch * printer_dpi_x)
+            target_height_px = int(target_height_inch * printer_dpi_y)
+            
+            # Calculate the scaling factors
+            img_aspect = img.width / img.height
+            target_aspect = target_width_px / target_height_px
+            
+            # Determine new dimensions while preserving aspect ratio
             if img_aspect > target_aspect:
-                new_w = HORZRES
-                new_h = int(round(HORZRES / img_aspect))
+                # Image is wider than target - fit to width
+                new_width = target_width_px
+                new_height = int(target_width_px / img_aspect)
             else:
-                new_h = VERTRES
-                new_w = int(round(VERTRES * img_aspect))
-
-            resized = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
-
-            # 5. Horizontal offset (relative to centered)
-            max_x_space   = HORZRES - new_w
-            base_center_x = max_x_space // 2
-            extra_shift   = int((max_x_space // 2) * (left_offset_percent / 100.0))
-            x_inside      = base_center_x + extra_shift
-            y_inside      = (VERTRES - new_h) // 2
-
-            # Final device coords
-            x1 = OFFX + x_inside
-            y1 = OFFY + y_inside
-            x2 = x1 + new_w
-            y2 = y1 + new_h
-
-            dib = ImageWin.Dib(resized)
-
-            # 6. Print
+                # Image is taller than target - fit to height
+                new_height = target_height_px
+                new_width = int(target_height_px * img_aspect)
+            
+            # Resize image with high-quality resampling
+            resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            
+            # Create a new image with the exact target size and white background
+            final_img = Image.new('RGB', (target_width_px, target_height_px), 'white')
+            
+            # Calculate centering offsets with adjustable left offset
+            max_x_offset = target_width_px - new_width
+            base_x_offset = max_x_offset // 2  # This would be the centered position
+            additional_offset = int((max_x_offset // 2) * (left_offset_percent / 100))
+            x_offset = base_x_offset + additional_offset
+            
+            y_offset = (target_height_px - new_height) // 2
+            
+            # Paste the resized image onto the white background
+            final_img.paste(resized_img, (x_offset, y_offset))
+            
+            # Convert to device-independent bitmap
+            dib = ImageWin.Dib(final_img)
+            
+            # Start print job
             pdc.StartDoc(image_path)
             pdc.StartPage()
-            dib.draw(pdc.GetHandleOutput(), (x1, y1, x2, y2))
+            
+            # Calculate margins for centering on page
+            margin_x = (physical_width - target_width_px) // 2
+            margin_y = (physical_height - target_height_px) // 2
+            
+            # Draw the image centered on the page
+            dib.draw(
+                pdc.GetHandleOutput(),
+                (
+                    margin_x,
+                    margin_y,
+                    margin_x + target_width_px,
+                    margin_y + target_height_px
+                )
+            )
+            
+            # Finish print job
             pdc.EndPage()
             pdc.EndDoc()
-
+            
             return True
-
+            
         except Exception as e:
-            print(f"Printing error: {e}")
+            print(f"Printing error: {str(e)}")
             return False
+            
         finally:
-            if pdc:
+            if 'pdc' in locals():
                 pdc.DeleteDC()
-            if hprinter:
+            if 'hprinter' in locals():
                 win32print.ClosePrinter(hprinter)
                 
 class HotFolderHandler(FileSystemEventHandler):
@@ -388,15 +435,20 @@ def save_user_data():
         user_data = request.json
         name = user_data.get('name')
         phone = str(user_data.get('phone'))
+        email = user_data.get('email', '')  # Default to empty string if not provided
         
         if not name or not phone:
             return jsonify({"message": "Missing name or phone"}), 400
 
-        conn = sqlite3.connect('faceswap.db')
+        # Email is required for new entries, but we'll handle empty ones for backward compatibility
+        if not email:
+            return jsonify({"message": "Email is required"}), 400
+
+        conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
 
-        cursor.execute("CREATE TABLE IF NOT EXISTS user_table (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, phone TEXT NOT NULL)")
-        cursor.execute("INSERT INTO user_table (name, phone) VALUES (?, ?)", (name, "0" + phone))
+        cursor.execute("CREATE TABLE IF NOT EXISTS user_table (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, phone TEXT NOT NULL, email TEXT NOT NULL)")
+        cursor.execute("INSERT INTO user_table (name, phone, email) VALUES (?, ?, ?)", (name, "0" + phone, email))
         conn.commit()
         conn.close()
 
@@ -445,11 +497,28 @@ def init_database():
     try:
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
+        
+        # Check if table exists and get its schema
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='user_table'")
+        table_exists = cursor.fetchone()
+        
+        if table_exists:
+            # Check if email column exists
+            cursor.execute("PRAGMA table_info(user_table)")
+            columns = [column[1] for column in cursor.fetchall()]
+            
+            if 'email' not in columns:
+                # Add email column to existing table
+                cursor.execute("ALTER TABLE user_table ADD COLUMN email TEXT DEFAULT ''")
+                print("Added email column to existing user_table")
+        
+        # Create table with email column if it doesn't exist
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS user_table (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
-                phone INTEGER NOT NULL
+                phone TEXT NOT NULL,
+                email TEXT NOT NULL
             )
         """)
         conn.commit()
@@ -481,7 +550,8 @@ if __name__ == '__main__':
         
         # Initialize hot folder monitoring
         init_hot_folder(app)
-        
+        # Generate once on startup; keeps imports side-effect free
+        generate_qr_png(data=DEFAULT_GDRIVE_URL, out_path=QR_PATH)
         # Start the Flask application
         app.run(host='0.0.0.0', port=5000, debug=True)
     except Exception as e:
