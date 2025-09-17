@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import { printImage } from "../../server/api";
+import { printImage, sendWhatsApp } from "../../server/api";
+import axios from "axios"; // masih butuh buat upload image
+const API_BASE_URL = "https://5572f8bd8405.ngrok-free.app/api"; // bisa ganti ke ngrok URL
 
 const Result = () => {
   const [qrCode, setQRCode] = useState(false);
@@ -7,6 +9,7 @@ const Result = () => {
   const [printMessage, setPrintMessage] = useState(false);
   const [printer, setPrinter] = useState(""); // Printer selection
   const [printSize, setPrintSize] = useState("4x6"); // Default print size
+  const [loading, setLoading] = useState(false);
 
   const handlePrint = async () => {
     const result = localStorage.getItem("swappedPhoto");
@@ -40,6 +43,50 @@ const Result = () => {
     }, 2000);
   };
 
+  const handleSendWhatsApp = async () => {
+    setLoading(true);
+    try {
+      const swappedPhoto = localStorage.getItem("swappedPhoto");
+      if (!swappedPhoto) {
+        alert("No image found!");
+        return;
+      }
+
+      // convert base64 -> Blob -> File
+      const blob = await fetch(swappedPhoto).then((res) => res.blob());
+      const file = new File([blob], "result.jpg", { type: blob.type });
+
+      // Upload ke /api/save-image
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const saveRes = await axios.post(`${API_BASE_URL}/save-image`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      const imageUrl = saveRes.data.url;
+      console.log("Image saved at:", imageUrl);
+
+      const phone = localStorage.getItem("userPhone"); // pastikan format 62xxxx
+      if (!phone) {
+        alert("No phone number found!");
+        return;
+      }
+
+      // pake sendWhatsApp dari api.jsx
+      const waRes = await sendWhatsApp(phone, imageUrl);
+
+      console.log("WA Response:", waRes);
+      alert("Foto berhasil dikirim ke WhatsApp!");
+      localStorage.clear();
+    } catch (err) {
+      console.error("Error sending WhatsApp:", err);
+      alert("Gagal kirim ke WhatsApp");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="w-full flex flex-col items-center justify-center">
       <h1 className="text-white text-[5em] font-bold">This is Yours</h1>
@@ -51,6 +98,13 @@ const Result = () => {
       />
 
       <div className="flex items-center justify-center gap-4">
+        <button
+          onClick={handleSendWhatsApp}
+          disabled={loading}
+          className="bg-green-500 text-white p-4 rounded-md text-2xl"
+        >
+          {loading ? "Sending..." : "Send to WhatsApp"}
+        </button>
         <div>
           <img
             // Taro di public folder
