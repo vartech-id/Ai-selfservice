@@ -28,4 +28,7 @@ src/server/faceswap.db
 *.sln
 *.sw?
 src/assets/template.jpg
+src/assets/men/
+src/assets/women/
+src/server/user_table.csv
 public/hasil.png

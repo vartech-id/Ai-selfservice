@@ -18,12 +18,12 @@ const App = () => {
 
   // State for UserForm Component
   const [name, setName] = useState(localStorage.getItem("name") || "");
-  const [phone, setPhone] = useState(localStorage.getItem("phone") || "");
+  const [phone, setPhone] = useState(localStorage.getItem("userPhone") || "");
   const [email, setEmail] = useState(localStorage.getItem("email") || "");
 
   useEffect(() => {
     const savedName = localStorage.getItem("name");
-    const savedPhone = localStorage.getItem("phone");
+    const savedPhone = localStorage.getItem("userPhone");
     const savedEmail = localStorage.getItem("email");
     if (savedName) setName(savedName);
     if (savedPhone) setPhone(savedPhone);
@@ -33,7 +33,7 @@ const App = () => {
   // Save user data to database
   const handleUserData = async () => {
     const name = localStorage.getItem("name");
-    const phone = localStorage.getItem("phone");
+    const phone = localStorage.getItem("userPhone");
     const email = localStorage.getItem("email");
 
     const userData = {
@@ -48,7 +48,7 @@ const App = () => {
       console.log("User data saved:", result);
 
       // Remove data from localStorage
-      localStorage.clear();
+//       localStorage.clear();
     } else {
       console.error("Failed to save user data");
     }

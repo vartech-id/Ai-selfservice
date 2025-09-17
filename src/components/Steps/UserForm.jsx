@@ -6,9 +6,14 @@ const UserForm = ({ name, setName, phone, setPhone, email, setEmail }) => {
   };
 
   const onPhoneChange = (e) => {
-    const value = e.target.value;
+    let value = e.target.value;
+
+    // format jadi 62xxxx
+    if (value.startsWith("0")) {
+      value = "62" + value.slice(1);
+    }
     setPhone(value);
-    localStorage.setItem("phone", value);
+    localStorage.setItem("userPhone", value); // disimpan konsisten
   };
 
   const onEmailChange = (e) => {
@@ -16,10 +21,6 @@ const UserForm = ({ name, setName, phone, setPhone, email, setEmail }) => {
     setEmail(value);
     localStorage.setItem("email", value);
   };
-
-  localStorage.setItem("name", name);
-  localStorage.setItem("phone", phone);
-  localStorage.setItem("email", email);
 
   return (
     <div className="w-full flex flex-col items-center justify-center">
