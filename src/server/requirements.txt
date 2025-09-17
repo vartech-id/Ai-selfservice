@@ -2,7 +2,13 @@ Flask
 Flask-Cors
 opencv-python
 Pillow
-pywin32
 watchdog
 websocket-client
 qrcode[pil]
+requests
+
+# Hanya untuk Windows
+pywin32; platform_system == "Windows"
+
+# Hanya untuk Linux atau macOS (cups untuk printing)
+pycups; platform_system != "Windows"

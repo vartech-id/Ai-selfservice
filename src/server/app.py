@@ -17,12 +17,43 @@ from watchdog.events import FileSystemEventHandler
 import threading
 from pathlib import Path
 import logging
+import requests
+from PIL import Image
+import platform
 
-from PIL import Image, ImageWin
-import win32print
-import win32ui
-import win32con
-from qr_generation import generate_qr_png, QR_FILENAME, DEFAULT_GDRIVE_URL
+# detect OS
+IS_WINDOWS = platform.system() == "Windows"
+
+if IS_WINDOWS:
+    import win32print
+    import win32ui
+    import win32con
+    from PIL import ImageWin
+else:
+    import cups
+
+try:
+    from qr_generation import generate_qr_png, QR_FILENAME, DEFAULT_GDRIVE_URL
+except Exception as _qr_imp_err:
+    logging.warning("qr_generation import failed: %s", _qr_imp_err)
+    # fallback values
+    QR_FILENAME = "qr.png"
+    DEFAULT_GDRIVE_URL = "https://example.com"
+
+    def generate_qr_png(data, out_path):
+        """
+        Fallback QR generator:
+        - Coba pakai lib 'qrcode' kalau tersedia
+        - Kalau tidak, raise error terkontrol (endpoint akan balikin 500 daripada crash)
+        """
+        try:
+            import qrcode as _qrcode
+            img = _qrcode.make(data)          # gunakan API sederhana (tidak butuh QRCode class)
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            img.save(out_path)
+            return out_path
+        except Exception as e:
+            raise RuntimeError(f"QR generation unavailable: {e}")
 
 # Initialize the Flask app
 app = Flask(__name__)
@@ -31,6 +62,10 @@ CORS(app)
 # Configuration
 DATABASE = 'faceswap.db'
 TABLE_NAME = 'user_table'
+
+#ULTASMG WHATSAPP
+ULTRA_INSTANCE_ID = "instance143141"
+ULTRA_TOKEN = "tbdnkx9ae7xse4ca"
 
 # Sesuaikan pathnya
 BASE_ASSET_DIR = (Path(__file__).resolve().parents[1] / "assets").resolve()
@@ -45,8 +80,13 @@ QR_PATH = PROJECT_ROOT / "public" / QR_FILENAME
 @app.get("/api/qr")
 def get_qr():
     # Always (re)generate before serving to ensure the latest link
-    generate_qr_png(data=DEFAULT_GDRIVE_URL, out_path=QR_PATH)
-    return send_file(QR_PATH, mimetype="image/png")
+    try:
+        QR_PATH.parent.mkdir(parents=True, exist_ok=True)
+        generate_qr_png(data=DEFAULT_GDRIVE_URL, out_path=QR_PATH)
+        return send_file(QR_PATH, mimetype="image/png")
+    except Exception as e:
+        app.logger.exception("QR generation failed: %s", e)
+        return jsonify({"error": str(e)}), 500
 
 @app.post("/api/qr/rebuild")
 def rebuild_qr():
@@ -69,13 +109,23 @@ def load_config():
             'path': os.path.join(os.path.expanduser('~'), 'FaceSwapHotFolder'),
             'enabled': 'true'
         }
-        config['Printer'] = {
-            'default_printer': win32print.GetDefaultPrinter(),
-            'default_print_size': '4x6'
-        }
+        if IS_WINDOWS:
+            config['Printer'] = {
+                'default_printer': win32print.GetDefaultPrinter(),
+                'default_print_size': '4x6'
+            }
+        else:
+            try:
+                conn = cups.Connection()
+                default_printer = conn.getDefault() or "No default printer"
+            except:
+                default_printer = "No printer"
+            config['Printer'] = {
+                'default_printer': default_printer,
+                'default_print_size': '4x6'
+            }
         save_config()
-    
-    # Ensure hot folder exists
+
     os.makedirs(config['HotFolder']['path'], exist_ok=True)
     return config
 
@@ -87,114 +137,104 @@ def save_config():
 class ImagePrinter:
     @staticmethod
     def get_print_dimensions(print_size):
-        """
-        Convert print size string to dimensions in inches and pixels
-        Returns: tuple (width_inches, height_inches)
-        """
-        dimensions = {
+        """Convert print size string to dimensions in inches"""
+        return {
             "4x6": (4.0, 6.0),
             "6x4": (6.0, 4.0)
-        }
-        return dimensions.get(print_size, (4.0, 6.0))  # Default to 4x6 if invalid size
+        }.get(print_size, (4.0, 6.0))
 
     @staticmethod
-    def print_image(image_path, printer_name, print_size="4x6", left_offset_percent=10):
-        """
-        Print image with adjustable left offset
-        left_offset_percent: 0 to 100, where 0 is centered (default) and 100 moves image fully right
-        """
+    def print_image(image_path, printer_name=None, print_size="4x6", left_offset_percent=0):
+        if IS_WINDOWS:
+            return ImagePrinter._print_windows(image_path, printer_name, print_size, left_offset_percent)
+        else:
+            return ImagePrinter._print_macos(image_path, printer_name)
+
+    # ---------------- WINDOWS ----------------
+    @staticmethod
+    def _print_windows(image_path, printer_name, print_size, left_offset_percent):
         try:
-            # Open the image
-            img = Image.open(image_path)
-            img = img.convert('RGB')  # Ensure RGB mode
-            
-            # Initialize printer
+            img = Image.open(image_path).convert("RGB")
+
             hprinter = win32print.OpenPrinter(printer_name)
-            printer_info = win32print.GetPrinter(hprinter, 2)
             pdc = win32ui.CreateDC()
             pdc.CreatePrinterDC(printer_name)
-            
-            # Get printer DPI and physical dimensions
-            printer_dpi_x = pdc.GetDeviceCaps(win32con.LOGPIXELSX)
-            printer_dpi_y = pdc.GetDeviceCaps(win32con.LOGPIXELSY)
+
+            # get printer DPI and physical size
+            dpi_x = pdc.GetDeviceCaps(win32con.LOGPIXELSX)
+            dpi_y = pdc.GetDeviceCaps(win32con.LOGPIXELSY)
             physical_width = pdc.GetDeviceCaps(win32con.PHYSICALWIDTH)
             physical_height = pdc.GetDeviceCaps(win32con.PHYSICALHEIGHT)
-            
-            # Get target dimensions in inches
-            target_width_inch, target_height_inch = ImagePrinter.get_print_dimensions(print_size)
-            
-            # Convert target dimensions to pixels at printer's DPI
-            target_width_px = int(target_width_inch * printer_dpi_x)
-            target_height_px = int(target_height_inch * printer_dpi_y)
-            
-            # Calculate the scaling factors
+
+            # target size in px
+            w_inch, h_inch = ImagePrinter.get_print_dimensions(print_size)
+            target_w = int(w_inch * dpi_x)
+            target_h = int(h_inch * dpi_y)
+
+            # maintain aspect ratio
             img_aspect = img.width / img.height
-            target_aspect = target_width_px / target_height_px
-            
-            # Determine new dimensions while preserving aspect ratio
+            target_aspect = target_w / target_h
+
             if img_aspect > target_aspect:
-                # Image is wider than target - fit to width
-                new_width = target_width_px
-                new_height = int(target_width_px / img_aspect)
+                new_w = target_w
+                new_h = int(target_w / img_aspect)
             else:
-                # Image is taller than target - fit to height
-                new_height = target_height_px
-                new_width = int(target_height_px * img_aspect)
-            
-            # Resize image with high-quality resampling
-            resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-            
-            # Create a new image with the exact target size and white background
-            final_img = Image.new('RGB', (target_width_px, target_height_px), 'white')
-            
-            # Calculate centering offsets with adjustable left offset
-            max_x_offset = target_width_px - new_width
-            base_x_offset = max_x_offset // 2  # This would be the centered position
+                new_h = target_h
+                new_w = int(target_h * img_aspect)
+
+            resized_img = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+
+            # canvas putih dengan ukuran target
+            final_img = Image.new("RGB", (target_w, target_h), "white")
+
+            # offset horizontal
+            max_x_offset = target_w - new_w
+            base_x_offset = max_x_offset // 2
             additional_offset = int((max_x_offset // 2) * (left_offset_percent / 100))
             x_offset = base_x_offset + additional_offset
-            
-            y_offset = (target_height_px - new_height) // 2
-            
-            # Paste the resized image onto the white background
+            y_offset = (target_h - new_h) // 2
+
             final_img.paste(resized_img, (x_offset, y_offset))
-            
-            # Convert to device-independent bitmap
+
             dib = ImageWin.Dib(final_img)
-            
-            # Start print job
             pdc.StartDoc(image_path)
             pdc.StartPage()
-            
-            # Calculate margins for centering on page
-            margin_x = (physical_width - target_width_px) // 2
-            margin_y = (physical_height - target_height_px) // 2
-            
-            # Draw the image centered on the page
+
+            # margin untuk center di kertas
+            margin_x = (physical_width - target_w) // 2
+            margin_y = (physical_height - target_h) // 2
+
             dib.draw(
                 pdc.GetHandleOutput(),
-                (
-                    margin_x,
-                    margin_y,
-                    margin_x + target_width_px,
-                    margin_y + target_height_px
-                )
+                (margin_x, margin_y, margin_x + target_w, margin_y + target_h)
             )
-            
-            # Finish print job
+
             pdc.EndPage()
             pdc.EndDoc()
-            
+
             return True
-            
         except Exception as e:
-            print(f"Printing error: {str(e)}")
+            print(f"Windows print error: {e}")
             return False
-            
         finally:
-            if 'pdc' in locals():
+            try:
                 pdc.DeleteDC()
-            if 'hprinter' in locals():
                 win32print.ClosePrinter(hprinter)
+            except:
+                pass
+
+    # ---------------- macOS / Linux ----------------
+    @staticmethod
+    def _print_macos(image_path, printer_name=None):
+        try:
+            conn = cups.Connection()
+            if not printer_name:
+                printer_name = conn.getDefault()
+            conn.printFile(printer_name, image_path, "FaceSwap Job", {})
+            return True
+        except Exception as e:
+            print(f"macOS print error: {e}")
+            return False
                 
 class HotFolderHandler(FileSystemEventHandler):
     def __init__(self, app):
@@ -364,7 +404,15 @@ def swap_face():
 @app.route('/api/printer/config', methods=['GET', 'PUT'])
 def printer_config():
     if request.method == 'GET':
-        printers = [printer[2] for printer in win32print.EnumPrinters(2)]
+        if IS_WINDOWS:
+            printers = [p[2] for p in win32print.EnumPrinters(2)]
+        else:
+            try:
+                conn = cups.Connection()
+                printers = list(conn.getPrinters().keys())
+            except:
+                printers = []
+
         return jsonify({
             'printers': printers,
             'default_printer': config['Printer']['default_printer'],
@@ -375,7 +423,7 @@ def printer_config():
                 'enabled': config['HotFolder'].getboolean('enabled')
             }
         })
-    
+
     elif request.method == 'PUT':
         data = request.json
         if 'default_printer' in data:
@@ -390,7 +438,7 @@ def printer_config():
                     config['HotFolder']['path'] = new_path
             if 'enabled' in data['hot_folder']:
                 config['HotFolder']['enabled'] = str(data['hot_folder']['enabled']).lower()
-        
+
         save_config()
         return jsonify({'message': 'Configuration updated successfully'})
 
@@ -440,6 +488,9 @@ def save_user_data():
         if not name or not phone:
             return jsonify({"message": "Missing name or phone"}), 400
 
+        if phone.startswith("0"):
+            phone = "62" + phone[1:]
+
         # Email is required for new entries, but we'll handle empty ones for backward compatibility
         if not email:
             return jsonify({"message": "Email is required"}), 400
@@ -448,7 +499,8 @@ def save_user_data():
         cursor = conn.cursor()
 
         cursor.execute("CREATE TABLE IF NOT EXISTS user_table (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, phone TEXT NOT NULL, email TEXT NOT NULL)")
-        cursor.execute("INSERT INTO user_table (name, phone, email) VALUES (?, ?, ?)", (name, "0" + phone, email))
+        # cursor.execute("INSERT INTO user_table (name, phone, email) VALUES (?, ?, ?)", (name, "0" + phone, email))
+        cursor.execute("INSERT INTO user_table (name, phone, email) VALUES (?, ?, ?)", (name, phone, email))
         conn.commit()
         conn.close()
 
@@ -478,6 +530,60 @@ def export_to_csv():
             writer.writerows(rows)
 
         return send_file(csv_file_path, as_attachment=True)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/save-image', methods=['POST'])
+def save_image():
+    if 'image' not in request.files:
+        return jsonify({"error": "No image uploaded"}), 400
+
+    file = request.files['image']
+    filename = f"{uuid.uuid4()}.jpg"
+    save_dir = os.path.join(os.getcwd(), "static")
+    os.makedirs(save_dir, exist_ok=True)
+
+    path = os.path.join(save_dir, filename)
+    file.save(path)
+
+    # coba ambil URL ngrok
+    ngrok_url = get_ngrok_url()
+    if ngrok_url:
+        public_url = f"{ngrok_url}/static/{filename}"
+    else:
+        # fallback ke localhost
+        public_url = f"http://127.0.0.1:5000/static/{filename}"
+
+    return jsonify({"url": public_url})
+
+def get_ngrok_url():
+    try:
+        resp = requests.get("http://127.0.0.1:4040/api/tunnels")
+        tunnels = resp.json().get("tunnels", [])
+        for t in tunnels:
+            if t["proto"] == "https":  # pilih URL HTTPS
+                return t["public_url"]
+    except Exception as e:
+        print("Ngrok URL not found:", e)
+    return None
+
+@app.route("/api/send-whatsapp", methods=["POST"])
+def send_whatsapp():
+    data = request.json
+    phone = data.get("phone")
+    image_url = data.get("image_url")
+
+    url = f"https://api.ultramsg.com/{ULTRA_INSTANCE_ID}/messages/image"
+    payload = {
+        "token": ULTRA_TOKEN,
+        "to": phone,
+        "image": image_url,
+        "caption": "Foto kamu sudah jadi 🎉"
+    }
+
+    try:
+        resp = requests.post(url, data=payload)
+        return jsonify(resp.json())
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

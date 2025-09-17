@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://127.0.0.1:5000/api";
+const API_BASE_URL = "https://5572f8bd8405.ngrok-free.app/api";
 
 export const fetchTemplates = async (gender) => {
   try {
@@ -136,6 +136,19 @@ export const printImage = async (imageBlob) => {
     return response.data;
   } catch (error) {
     console.error("Error printing image:", error);
+    throw error;
+  }
+};
+
+export const sendWhatsApp = async (phone, imageUrl) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/send-whatsapp`, {
+      phone,
+      image_url: imageUrl,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error sending WhatsApp message:", error);
     throw error;
   }
 };
