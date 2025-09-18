@@ -29,3 +29,5 @@ src/server/user_table.csv
 *.sw?
 src/assets/template.jpg
 public/hasil.png
+venv
+.venv

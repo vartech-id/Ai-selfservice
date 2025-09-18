@@ -7,7 +7,6 @@ import urllib.request
 import urllib.parse
 import base64
 import tempfile
-import websocket
 from flask_cors import CORS
 import sqlite3
 import time
@@ -17,12 +16,38 @@ from watchdog.events import FileSystemEventHandler
 import threading
 from pathlib import Path
 import logging
+from PIL import Image
 
-from PIL import Image, ImageWin
-import win32print
-import win32ui
-import win32con
+try:
+    from PIL import ImageWin
+except ImportError:  # Pillow's Windows helpers are unavailable on non-Windows platforms
+    ImageWin = None
+
+try:
+    import win32print
+    import win32ui
+    import win32con
+except ImportError:  # PyWin32 is only available on Windows
+    win32print = win32ui = win32con = None
+
+try:
+    import websocket as websocket_client
+    if not hasattr(websocket_client, 'WebSocketApp'):
+        raise ImportError('websocket-client module not found')
+    websocket = websocket_client
+except Exception:
+    websocket = None
+
 from qr_generation import generate_qr_png, QR_FILENAME, DEFAULT_GDRIVE_URL
+
+WINDOWS_PRINTING_AVAILABLE = all(module is not None for module in (win32print, win32ui, win32con, ImageWin))
+
+def _create_websocket():
+    if websocket is None:
+        raise RuntimeError(
+            'websocket-client is required; please install it and ensure any package named "websocket" is uninstalled.'
+        )
+    return websocket.WebSocket()
 
 # Initialize the Flask app
 app = Flask(__name__)
@@ -63,6 +88,17 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 config = configparser.ConfigParser()
 CONFIG_FILE = 'config.ini'
 
+def _detect_default_printer():
+    """Return the system default printer if Windows printing modules are present."""
+    if not WINDOWS_PRINTING_AVAILABLE:
+        return ""
+    try:
+        return win32print.GetDefaultPrinter()
+    except Exception as exc:  # pragma: no cover - defensive guard for pywin32 quirks
+        logging.warning("Unable to read default printer: %s", exc)
+        return ""
+
+
 def load_config():
     """Load configuration from file or create with defaults."""
     if os.path.exists(CONFIG_FILE):
@@ -73,11 +109,25 @@ def load_config():
             'enabled': 'true'
         }
         config['Printer'] = {
-            'default_printer': win32print.GetDefaultPrinter(),
+            'default_printer': _detect_default_printer(),
             'default_print_size': '4x6'
         }
         save_config()
-    
+
+    if 'HotFolder' not in config:
+        config['HotFolder'] = {
+            'path': os.path.join(os.path.expanduser('~'), 'FaceSwapHotFolder'),
+            'enabled': 'true'
+        }
+    else:
+        config['HotFolder'].setdefault('path', os.path.join(os.path.expanduser('~'), 'FaceSwapHotFolder'))
+        config['HotFolder'].setdefault('enabled', 'true')
+
+    if 'Printer' not in config:
+        config['Printer'] = {}
+    config['Printer'].setdefault('default_printer', _detect_default_printer())
+    config['Printer'].setdefault('default_print_size', '4x6')
+
     # Ensure hot folder exists
     os.makedirs(config['HotFolder']['path'], exist_ok=True)
     return config
@@ -99,6 +149,14 @@ class ImagePrinter:
         Print image and fit it to the printer's REAL printable area.
         left_offset_percent: 0 = centered, 100 = push as far right as possible
         """
+        if not WINDOWS_PRINTING_AVAILABLE:
+            logging.warning("print_image invoked but Windows printing modules are unavailable; skipping print job")
+            return False
+
+        if not printer_name:
+            logging.warning("No printer name supplied; aborting print job")
+            return False
+
         hprinter = None
         pdc = None
         try:
@@ -159,7 +217,7 @@ class ImagePrinter:
         finally:
             if pdc:
                 pdc.DeleteDC()
-            if hprinter:
+            if hprinter and win32print:
                 win32print.ClosePrinter(hprinter)
                 
 class HotFolderHandler(FileSystemEventHandler):
@@ -183,7 +241,12 @@ class HotFolderHandler(FileSystemEventHandler):
                 workflow = load_workflow()
                 updated_workflow = update_workflow(workflow, template_path, image_path)
                 
-                ws = websocket.WebSocket()
+                try:
+                    ws = _create_websocket()
+                except RuntimeError as err:
+                    logging.error('Hot folder processing skipped: %s', err)
+                    return
+
                 ws.connect(f"ws://{SERVER_ADDRESS}/ws?clientId={CLIENT_ID}")
                 images = get_images(ws, updated_workflow)
                 
@@ -314,7 +377,12 @@ def swap_face():
     workflow = load_workflow()
     updated_workflow = update_workflow(workflow, template_path, source_path)
 
-    ws = websocket.WebSocket()
+    try:
+        ws = _create_websocket()
+    except RuntimeError as err:
+        app.logger.error('Swap face aborted: %s', err)
+        return jsonify({'error': str(err)}), 500
+
     ws.connect(f"ws://{SERVER_ADDRESS}/ws?clientId={CLIENT_ID}")
     images = get_images(ws, updated_workflow)
 
@@ -330,17 +398,28 @@ def swap_face():
 @app.route('/api/printer/config', methods=['GET', 'PUT'])
 def printer_config():
     if request.method == 'GET':
-        printers = [printer[2] for printer in win32print.EnumPrinters(2)]
-        return jsonify({
+        printers = []
+        if WINDOWS_PRINTING_AVAILABLE:
+            try:
+                printers = [printer[2] for printer in win32print.EnumPrinters(win32print.PRINTER_ENUM_LOCAL)]
+            except Exception as exc:  # pragma: no cover - defensive guard
+                logging.warning("Failed to enumerate printers: %s", exc)
+
+        response = {
             'printers': printers,
-            'default_printer': config['Printer']['default_printer'],
+            'default_printer': config['Printer'].get('default_printer', ''),
             'default_print_size': config['Printer'].get('default_print_size', '4x6'),
             'available_sizes': ['4x6', '6x4'],
             'hot_folder': {
                 'path': config['HotFolder']['path'],
                 'enabled': config['HotFolder'].getboolean('enabled')
             }
-        })
+        }
+
+        if not WINDOWS_PRINTING_AVAILABLE:
+            response['warning'] = 'Printing controls are only available on Windows hosts.'
+
+        return jsonify(response)
     
     elif request.method == 'PUT':
         data = request.json
@@ -363,7 +442,11 @@ def printer_config():
 @app.route('/api/printer/print', methods=['POST'])
 def print_image():
     logging.info('Received print request with parameters:')
-    
+
+    if not WINDOWS_PRINTING_AVAILABLE:
+        logging.warning('Print endpoint called on a platform without Windows printing support')
+        return jsonify({'error': 'Printing is only supported when running on Windows with pywin32 installed.'}), 501
+
     if 'image' not in request.files:
         return jsonify({'error': 'No image provided'}), 400
     
@@ -499,7 +582,7 @@ if __name__ == '__main__':
         # Generate once on startup; keeps imports side-effect free
         generate_qr_png(data=DEFAULT_GDRIVE_URL, out_path=QR_PATH)
         # Start the Flask application
-        app.run(host='0.0.0.0', port=5000, debug=True)
+        app.run(host='0.0.0.0', port=5001, debug=False)
     except Exception as e:
         print(f"Error starting application: {e}")
     finally:
