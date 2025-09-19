@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = "https://fbaf3fda760d.ngrok-free.app/api";
+const API_BASE_URL = "http://127.0.0.1:5000/api";
 
 export const fetchTemplates = async (gender) => {
   try {

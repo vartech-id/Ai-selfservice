@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { printImage, sendWhatsApp } from "../../server/api";
 import axios from "axios"; // masih butuh buat upload image
 import { FaWhatsapp } from "react-icons/fa";
-const API_BASE_URL = "https://fbaf3fda760d.ngrok-free.app/api"; // bisa ganti ke ngrok URL
+const API_BASE_URL = "http://127.0.0.1:5000/api"; // bisa ganti ke ngrok URL
 
 const Result = () => {
   const [qrCode, setQRCode] = useState(false);
@@ -102,19 +102,20 @@ const Result = () => {
         <button
             onClick={handleSendWhatsApp}
             disabled={loading}
-            className={`rounded-2xl p-6 flex items-center justify-center shadow-lg transition ${
-                loading
-                ? "opacity-60 cursor-not-allowed"
-                : "hover:opacity-90"
+            className={`rounded-2xl p-4 flex items-center justify-center shadow-lg transition ${
+            loading ? "opacity-60 cursor-not-allowed" : "hover:opacity-90"
             }`}
-            style={{ backgroundColor: "#25D366" }} // official WA green
             aria-label="Send to WhatsApp"
             title="Send to WhatsApp"
-            >
+        >
             {loading ? (
-                <span className="text-white text-lg font-medium">Sending...</span>
+            <span className="text-white text-lg font-medium">Sending...</span>
             ) : (
-                <FaWhatsapp className="text-white w-12 h-12 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]" />
+            <img
+                src="/whatsapp-icon.png" // taro PNG di folder public
+                alt="WhatsApp"
+                className="w-16 h-16"
+            />
             )}
         </button>
         <div>

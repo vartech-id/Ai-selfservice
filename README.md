@@ -47,38 +47,8 @@ npm run dev
 ```
 Vite serves the React app (default `http://localhost:5173`). The UI reads the QR/print configuration and calls the API base you set in step 3.
 
-## 6. Expose the API with Cloudflare Tunnel
-1. Log in (one-time):
-   ```bash
-   cloudflared tunnel login
-   ```
-   This opens a browser window to authenticate with Cloudflare and pick a zone.
-2. Create a named tunnel (do once):
-   ```bash
-   cloudflared tunnel create pvm-faceswap
-   ```
-3. Map the tunnel to the Flask backend by editing `~/.cloudflared/config.yml` (create if missing):
-   ```yaml
-   tunnel: pvm-faceswap
-   credentials-file: /Users/<username>/.cloudflared/pvm-faceswap.json
-
-   ingress:
-     - hostname: faceswap.<your-domain.com>
-       service: http://localhost:5000
-     - service: http_status:404
-   ```
-4. Point DNS to the tunnel:
-   ```bash
-   cloudflared tunnel route dns pvm-faceswap faceswap.<your-domain.com>
-   ```
-5. Start the tunnel:
-   ```bash
-   cloudflared tunnel run pvm-faceswap
-   ```
-   Leave this process running; it forwards `faceswap.<your-domain.com>` to your local Flask server.
-
-### Quick Tunnel (no custom domain)
-For temporary sharing, skip steps 2–4 above and run:
+## 6. Expose the API with Cloudflare Tunnel (Quick Tunnel)
+For the fastest option without DNS setup, run:
 ```bash
 cloudflared tunnel --url http://localhost:5000
 ```
@@ -86,6 +56,16 @@ Cloudflare prints a temporary `.trycloudflare.com` URL you can drop into `API_BA
 
 ## 7. Updating the Frontend to Use the Tunnel
 When the tunnel URL is ready, set `API_BASE_URL` in `src/server/api.jsx` to the tunnel origin (e.g., `https://faceswap.example.com/api` or the `.trycloudflare.com` host). Rebuild/restart the frontend if it was running.
+
+If the Vite dev server still proxies to `http://127.0.0.1:5000`, update `vite.config.js` so the `/api` proxy target matches your Cloudflare URL, for example:
+
+```js
+// vite.config.js
+"/api": {
+  target: "https://faceswap.trycloudflare.com",
+  changeOrigin: true
+}
+```
 
 ## Troubleshooting
 - **Python still reports 3.13**: Ensure `.python-version` exists and pyenv is initialized in the shell profile. Running `pyenv which python` should return a 3.11 path inside `~/.pyenv/versions/3.11.x/`.
