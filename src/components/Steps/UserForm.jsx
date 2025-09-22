@@ -6,14 +6,9 @@ const UserForm = ({ name, setName, phone, setPhone, email, setEmail }) => {
   };
 
   const onPhoneChange = (e) => {
-    let value = e.target.value;
-
-    // format jadi 62xxxx
-    if (value.startsWith("0")) {
-      value = "62" + value.slice(1);
-    }
-    setPhone(value);
-    localStorage.setItem("userPhone", value); // disimpan konsisten
+      const value = e.target.value.trim();
+      setPhone(value);
+      localStorage.setItem("userPhone", value);
   };
 
   const onEmailChange = (e) => {
@@ -39,7 +34,7 @@ const UserForm = ({ name, setName, phone, setPhone, email, setEmail }) => {
         <h1 className="text-white text-[5em] font-bold">Phone Number</h1>
         <input
           className="border w-4/5 h-32 text-[5em]"
-          type="number"
+          type="tel"
           id="phone"
           name="phone"
           value={phone}

@@ -71,5 +71,6 @@ If the Vite dev server still proxies to `http://127.0.0.1:5000`, update `vite.co
 - **Python still reports 3.13**: Ensure `.python-version` exists and pyenv is initialized in the shell profile. Running `pyenv which python` should return a 3.11 path inside `~/.pyenv/versions/3.11.x/`.
 - **`pip install` fails on `pycups`**: Install system dependencies (`brew install cups` on macOS) or skip printing features by commenting them in `src/server/requirements.txt`.
 - **Cloudflare tunnel can’t start**: Verify the credentials file path matches `cloudflared tunnel info pvm-faceswap` output, and that the chosen hostname has a DNS record managed by Cloudflare.
+- For overseas phone numbers, you must use `+`
 
 With these steps completed, the React frontend runs locally, the Flask backend serves data at port 5000, and Cloudflare tunnels your API for remote access.
