@@ -64,8 +64,8 @@ DATABASE = 'faceswap.db'
 TABLE_NAME = 'user_table'
 
 #ULTASMG WHATSAPP
-ULTRA_INSTANCE_ID = "instance143141"
-ULTRA_TOKEN = "tbdnkx9ae7xse4ca"
+ULTRA_INSTANCE_ID = "instance143424"
+ULTRA_TOKEN = "qft4hitw1ji6fted"
 
 # Sesuaikan pathnya
 BASE_ASSET_DIR = (Path(__file__).resolve().parents[1] / "assets").resolve()
