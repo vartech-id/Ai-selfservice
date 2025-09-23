@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { printImage, sendWhatsApp } from "../../server/api";
 import axios from "axios"; // masih butuh buat upload image
 import { FaWhatsapp } from "react-icons/fa";
-const API_BASE_URL = "http://127.0.0.1:5000/api"; // bisa ganti ke ngrok URL
+const API_BASE_URL = " http://127.0.0.1:5000/api"; // rubah url http://127.0.0.1:5000 ke ngrok URL
 
 const Result = () => {
   const [qrCode, setQRCode] = useState(false);
@@ -11,6 +11,7 @@ const Result = () => {
   const [printer, setPrinter] = useState(""); // Printer selection
   const [printSize, setPrintSize] = useState("4x6"); // Default print size
   const [loading, setLoading] = useState(false);
+  const [waMessage, setWaMessage] = useState(null);
 
   const handlePrint = async () => {
     const result = localStorage.getItem("swappedPhoto");
@@ -44,12 +45,19 @@ const Result = () => {
     }, 2000);
   };
 
+  const PopUpWA = (message) => {
+    setWaMessage(message);
+    setTimeout(() => {
+      setWaMessage(null);
+    }, 2500);
+  };
+
   const handleSendWhatsApp = async () => {
     setLoading(true);
     try {
       const swappedPhoto = localStorage.getItem("swappedPhoto");
       if (!swappedPhoto) {
-        alert("No image found!");
+        PopUpWA("No image found!");
         return;
       }
 
@@ -70,7 +78,7 @@ const Result = () => {
 
       const phone = localStorage.getItem("userPhone"); // pastikan format 62xxxx
       if (!phone) {
-        alert("No phone number found!");
+        PopUpWA("No phone number found!");
         return;
       }
 
@@ -78,11 +86,11 @@ const Result = () => {
       const waRes = await sendWhatsApp(phone, imageUrl);
 
       console.log("WA Response:", waRes);
-      alert("Foto berhasil dikirim ke WhatsApp!");
-      localStorage.clear();
+      PopUpWA("Successfully Sent to WhatsApp!");
+//       localStorage.clear();
     } catch (err) {
       console.error("Error sending WhatsApp:", err);
-      alert("Gagal kirim ke WhatsApp");
+      PopUpWA("Gagal kirim ke WhatsApp");
     } finally {
       setLoading(false);
     }
@@ -180,6 +188,13 @@ const Result = () => {
           Printed!
         </div>
       ) : null}
+
+      {/* ✅ WhatsApp popup */}
+      {waMessage && (
+        <div className="bg-green-600 z-10 absolute w-fit mx-auto text-[3.5em] text-white py-3 px-10 rounded-md shadow-lg">
+          {waMessage}
+        </div>
+      )}
     </div>
   );
 };

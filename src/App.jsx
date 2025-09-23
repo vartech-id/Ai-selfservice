@@ -96,7 +96,7 @@ const App = () => {
 
   // Disable Next button if any field in UserForm is empty
   const isNextDisabled =
-    step === 1 && (!name.trim() || !phone.trim() || !email.trim());
+    step === 1 && (!name.trim() || !phone.trim());
 
   const steps = [
     <UserForm

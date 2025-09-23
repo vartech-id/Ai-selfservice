@@ -47,12 +47,12 @@ npm run dev
 ```
 Vite serves the React app (default `http://localhost:5173`). The UI reads the QR/print configuration and calls the API base you set in step 3.
 
-## 6. Expose the API with Cloudflare Tunnel (Quick Tunnel)
+## 6. Expose the API with Ngrok (Quick Tunnel)
 For the fastest option without DNS setup, run:
 ```bash
-cloudflared tunnel --url http://localhost:5000
+ngrok http 5000
 ```
-Cloudflare prints a temporary `.trycloudflare.com` URL you can drop into `API_BASE_URL` while it runs.
+ngrok prints a Forwarding `.ngrok-free.app` URL you can drop into `API_BASE_URL` while it runs.
 
 ## 7. Updating the Frontend to Use the Tunnel
 When the tunnel URL is ready, set `API_BASE_URL` in `src/server/api.jsx` to the tunnel origin (e.g., `https://faceswap.example.com/api` or the `.trycloudflare.com` host). Rebuild/restart the frontend if it was running.
@@ -62,7 +62,7 @@ If the Vite dev server still proxies to `http://127.0.0.1:5000`, update `vite.co
 ```js
 // vite.config.js
 "/api": {
-  target: "https://faceswap.trycloudflare.com",
+  target: "https://faceswap.ngrok-free.app",
   changeOrigin: true
 }
 ```

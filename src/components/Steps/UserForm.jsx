@@ -41,17 +41,17 @@ const UserForm = ({ name, setName, phone, setPhone, email, setEmail }) => {
           onChange={onPhoneChange}
         />
       </div>
-      <div className="text-center">
-        <h1 className="text-white text-[5em] font-bold">Email</h1>
-        <input
-          className="border w-4/5 h-32 text-[5em]"
-          type="email"
-          id="email"
-          name="email"
-          value={email}
-          onChange={onEmailChange}
-        />
-      </div>
+{/*       <div className="text-center"> */}
+{/*         <h1 className="text-white text-[5em] font-bold">Email</h1> */}
+{/*         <input */}
+{/*           className="border w-4/5 h-32 text-[5em]" */}
+{/*           type="email" */}
+{/*           id="email" */}
+{/*           name="email" */}
+{/*           value={email} */}
+{/*           onChange={onEmailChange} */}
+{/*         /> */}
+{/*       </div> */}
     </div>
   );
 };
