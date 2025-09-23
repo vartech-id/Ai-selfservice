@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { printImage, sendWhatsApp } from "../../server/api";
 import axios from "axios"; // masih butuh buat upload image
 import { FaWhatsapp } from "react-icons/fa";
-const API_BASE_URL = " http://127.0.0.1:5000/api"; // rubah url http://127.0.0.1:5000 ke ngrok URL
+const API_BASE_URL = "https://8bbbf26753ad.ngrok-free.app/api"; // rubah url http://127.0.0.1:5000 ke ngrok URL
 
 const Result = () => {
   const [qrCode, setQRCode] = useState(false);
