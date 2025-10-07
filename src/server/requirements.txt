@@ -7,4 +7,3 @@ qrcode
 websocket-client
 watchdog
 numpy
-websocket
