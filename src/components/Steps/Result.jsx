@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { printImage, sendWhatsApp } from "../../server/api";
 import axios from "axios"; // masih butuh buat upload image
-const API_BASE_URL = "https://5572f8bd8405.ngrok-free.app/api"; // bisa ganti ke ngrok URL
+const API_BASE_URL = " http://127.0.0.1:5000/api"; // ganti ke tunnel jika online
 
 const Result = () => {
   const [qrCode, setQRCode] = useState(false);
@@ -98,13 +98,13 @@ const Result = () => {
       />
 
       <div className="flex items-center justify-center gap-4">
-        <button
+        {/* <button
           onClick={handleSendWhatsApp}
           disabled={loading}
           className="bg-green-500 text-white p-4 rounded-md text-2xl"
         >
           {loading ? "Sending..." : "Send to WhatsApp"}
-        </button>
+        </button> */}
         <div>
           <img
             // Taro di public folder

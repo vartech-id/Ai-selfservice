@@ -20,14 +20,17 @@ const App = () => {
   const [name, setName] = useState(localStorage.getItem("name") || "");
   const [phone, setPhone] = useState(localStorage.getItem("userPhone") || "");
   const [email, setEmail] = useState(localStorage.getItem("email") || "");
+  const [company, setCompany] = useState(localStorage.getItem("company") || "");
 
   useEffect(() => {
     const savedName = localStorage.getItem("name");
     const savedPhone = localStorage.getItem("userPhone");
     const savedEmail = localStorage.getItem("email");
+    const savedCompany = localStorage.getItem("company");
     if (savedName) setName(savedName);
     if (savedPhone) setPhone(savedPhone);
     if (savedEmail) setEmail(savedEmail);
+    if (savedCompany) setCompany(savedCompany);
   }, []);
 
   // Save user data to database
@@ -35,11 +38,13 @@ const App = () => {
     const name = localStorage.getItem("name");
     const phone = localStorage.getItem("userPhone");
     const email = localStorage.getItem("email");
+    const company = localStorage.getItem("company");
 
     const userData = {
       name: name,
       phone: phone,
       email: email,
+      company: company,
     };
 
     const result = await saveUserData(userData);
@@ -72,7 +77,7 @@ const App = () => {
 
   // Disable Next button if any field in UserForm is empty
   const isNextDisabled =
-    step === 1 && (!name.trim() || !phone.trim() || !email.trim());
+    step === 1 && (!name.trim() || !phone.trim() || !email.trim() || !company.trim());
 
   const steps = [
     <UserForm
@@ -83,6 +88,8 @@ const App = () => {
       setPhone={setPhone}
       email={email}
       setEmail={setEmail}
+      company={company}
+      setCompany={setCompany}
       onNext={nextStep}
       onSaveUserData={handleUserData}
     />,
@@ -150,6 +157,7 @@ const App = () => {
             setName("");
             setPhone("");
             setEmail("");
+            setCompany("");
             localStorage.clear();
             setStarted(false);
             setStep(1);

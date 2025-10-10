@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 .background {
-  background-image: url("assets/ui/bg.png");
+  background-image: url("assets/ui/bg.png"); 
 }
 
 .scrollbar-hide::-webkit-scrollbar {
