@@ -12,7 +12,7 @@ const Result = () => {
   const [loading, setLoading] = useState(false);
 
   const handlePrint = async () => {
-    const result = localStorage.getItem("swappedPhoto");
+    const result = localStorage.getItem("swappedPhoto") || sessionStorage.getItem("swappedPhoto");
 
     if (!result) {
       alert("No image found to print!");
@@ -46,7 +46,7 @@ const Result = () => {
   const handleSendWhatsApp = async () => {
     setLoading(true);
     try {
-      const swappedPhoto = localStorage.getItem("swappedPhoto");
+      const swappedPhoto = localStorage.getItem("swappedPhoto") || sessionStorage.getItem("swappedPhoto");
       if (!swappedPhoto) {
         alert("No image found!");
         return;
@@ -92,7 +92,7 @@ const Result = () => {
       <h1 className="text-white text-[5em] font-bold">This is Yours</h1>
 
       <img
-        src={localStorage.getItem("swappedPhoto")}
+        src={localStorage.getItem("swappedPhoto") || sessionStorage.getItem("swappedPhoto")}
         alt="Swapped result"
         className="w-3/5 my-[6rem]"
       />
@@ -163,7 +163,7 @@ const Result = () => {
 
       {/* Print Pop-up */}
       {printMessage ? (
-        <div className="bg-[#BF9A30] z-10 absolute w-fit mx-auto text-[5em] text-white py-2 px-8 rounded-md">
+        <div className="bg-[#d2d2d2] z-10 absolute w-fit mx-auto text-[5em] text-white py-2 px-8 rounded-md">
           Printed!
         </div>
       ) : null}

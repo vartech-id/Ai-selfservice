@@ -72,7 +72,7 @@ const CameraCapture = ({ goBack, goTo }) => {
     setIsVideoVisible(false);
   };
 
-  const compressImage = (url, maxWidth = 1200, quality = 0.8) => {
+  const compressImage = (url, maxWidth = 1800, quality = 1) => {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
