@@ -76,7 +76,7 @@ const Print = () => {
       </div>
 
       <button
-        className="bg-[#BF9A30] p-2 w-3/5 mx-auto"
+        className="bg-[#d2d2d2] p-2 w-3/5 mx-auto"
         onClick={saveSettings}
       >
         Save Settings

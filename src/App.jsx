@@ -124,7 +124,7 @@ const App = () => {
                         <button
                           onClick={backStep}
                           disabled={step === 1}
-                          className="bg-[#BF9A30] px-14 rounded-full uppercase font-bold text-white"
+                          className="bg-[#d2d2d2] px-14 rounded-full uppercase font-bold text-white"
                         >
                           Back
                         </button>
@@ -133,9 +133,9 @@ const App = () => {
                           disabled={step === steps.length || isNextDisabled}
                           className={`px-14 rounded-full uppercase font-bold text-white ${
                             step === steps.length
-                              ? "bg-[#BF9A30]/50 cursor-not-allowed"
-                              : "bg-[#BF9A30]"
-                          } ${isNextDisabled ? "cursor-not-allowed bg-[#BF9A30]/70" : ""}`}
+                              ? "bg-[#d2d2d2]/50 cursor-not-allowed"
+                              : "bg-[#d2d2d2]"
+                          } ${isNextDisabled ? "cursor-not-allowed bg-[#d2d2d2]/70" : ""}`}
                         >
                           Next
                         </button>
