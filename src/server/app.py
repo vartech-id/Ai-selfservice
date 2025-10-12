@@ -100,6 +100,10 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 config = configparser.ConfigParser()
 CONFIG_FILE = 'config.ini'
 
+WINDOWS_DIALOG_OPTION = "WINDOWS_DEFAULT"
+AUTO_PRINT_SIZES = ["4x6", "6x4"]
+SUPPORTED_PRINT_SIZES = AUTO_PRINT_SIZES + [WINDOWS_DIALOG_OPTION] if IS_WINDOWS else AUTO_PRINT_SIZES
+
 def load_config():
     """Load configuration from file or create with defaults."""
     if os.path.exists(CONFIG_FILE):
@@ -125,6 +129,20 @@ def load_config():
                 'default_print_size': '4x6'
             }
         save_config()
+
+    if 'Printer' not in config:
+        config['Printer'] = {}
+    if not config['Printer'].get('default_printer'):
+        if IS_WINDOWS:
+            config['Printer']['default_printer'] = win32print.GetDefaultPrinter()
+        else:
+            try:
+                conn = cups.Connection()
+                config['Printer']['default_printer'] = conn.getDefault() or "No default printer"
+            except:
+                config['Printer']['default_printer'] = "No printer"
+    if config['Printer'].get('default_print_size') not in SUPPORTED_PRINT_SIZES:
+        config['Printer']['default_print_size'] = AUTO_PRINT_SIZES[0]
 
     os.makedirs(config['HotFolder']['path'], exist_ok=True)
     return config
@@ -268,8 +286,10 @@ class HotFolderHandler(FileSystemEventHandler):
                             f.write(image_data_list[0])
                         
                         printer_name = config['Printer'].get('default_printer')
-                        print_size = config['Printer'].get('default_print_size', '4x6')
-                        if ImagePrinter.print_image(temp_output, printer_name, print_size):
+                        print_size = config['Printer'].get('default_print_size', AUTO_PRINT_SIZES[0])
+                        if printer_name == WINDOWS_DIALOG_OPTION or print_size == WINDOWS_DIALOG_OPTION:
+                            print(f"Skipping auto print for {image_path} due to Windows dialog selection.")
+                        elif ImagePrinter.print_image(temp_output, printer_name, print_size):
                             print(f"Successfully printed processed image from: {image_path}")
                         else:
                             print(f"Failed to print processed image from: {image_path}")
@@ -413,11 +433,17 @@ def printer_config():
             except:
                 printers = []
 
+        printer_choices = printers[:]
+        if IS_WINDOWS and WINDOWS_DIALOG_OPTION not in printer_choices:
+            printer_choices.insert(0, WINDOWS_DIALOG_OPTION)
+
+        available_sizes = SUPPORTED_PRINT_SIZES if IS_WINDOWS else AUTO_PRINT_SIZES
+
         return jsonify({
-            'printers': printers,
+            'printers': printer_choices,
             'default_printer': config['Printer']['default_printer'],
-            'default_print_size': config['Printer'].get('default_print_size', '4x6'),
-            'available_sizes': ['4x6', '6x4'],
+            'default_print_size': config['Printer'].get('default_print_size', AUTO_PRINT_SIZES[0]),
+            'available_sizes': available_sizes,
             'hot_folder': {
                 'path': config['HotFolder']['path'],
                 'enabled': config['HotFolder'].getboolean('enabled')
@@ -427,9 +453,14 @@ def printer_config():
     elif request.method == 'PUT':
         data = request.json
         if 'default_printer' in data:
-            config['Printer']['default_printer'] = data['default_printer']
+            selected_printer = data['default_printer']
+            if selected_printer == WINDOWS_DIALOG_OPTION and IS_WINDOWS:
+                config['Printer']['default_printer'] = selected_printer
+            elif selected_printer != WINDOWS_DIALOG_OPTION:
+                config['Printer']['default_printer'] = selected_printer
         if 'default_print_size' in data:
-            if data['default_print_size'] in ['4x6', '6x4']:
+            allowed_sizes = SUPPORTED_PRINT_SIZES if IS_WINDOWS else AUTO_PRINT_SIZES
+            if data['default_print_size'] in allowed_sizes:
                 config['Printer']['default_print_size'] = data['default_print_size']
         if 'hot_folder' in data:
             if 'path' in data['hot_folder']:
@@ -453,13 +484,17 @@ def print_image():
     logging.info(f"Image received: {image.filename}")
     
     printer_name = request.form.get('printer', config['Printer']['default_printer'])
-    print_size = request.form.get('print_size', config['Printer'].get('default_print_size', '4x6'))
+    print_size = request.form.get('print_size', config['Printer'].get('default_print_size', AUTO_PRINT_SIZES[0]))
     
     # Log printer and print size
     logging.info(f"Printer: {printer_name}")
     logging.info(f"Print size: {print_size}")
+
+    if printer_name == WINDOWS_DIALOG_OPTION or print_size == WINDOWS_DIALOG_OPTION:
+        logging.info("Windows dialog requested; skipping backend print job.")
+        return jsonify({'message': 'WINDOWS_DIALOG_REQUESTED'})
     
-    if print_size not in ['4x6', '6x4']:
+    if print_size not in AUTO_PRINT_SIZES:
         return jsonify({'error': 'Invalid print size'}), 400
     
     temp_path = os.path.join(tempfile.gettempdir(), f"print_{uuid.uuid4()}.jpg")

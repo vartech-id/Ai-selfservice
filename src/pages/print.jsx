@@ -1,18 +1,35 @@
 import React, { useEffect, useState } from "react";
 import { fetchPrinters, updatePrinterConfig } from "../server/api";
 
+const WINDOWS_DIALOG_OPTION = "WINDOWS_DEFAULT";
+
 const Print = () => {
   const [printers, setPrinters] = useState([]);
   const [selectedPrinter, setSelectedPrinter] = useState("");
   const [printSize, setPrintSize] = useState("");
+  const [availableSizes, setAvailableSizes] = useState(["4x6", "6x4"]);
 
   // Fetch available printers
   useEffect(() => {
     const loadPrinters = async () => {
       try {
         const data = await fetchPrinters();
-        setPrinters(data.printers);
-        setSelectedPrinter(data.default_printer); // Set default printer
+
+        const printerSet = new Set(data.printers || []);
+        if (data.default_printer) {
+          printerSet.add(data.default_printer);
+        }
+        const printerOptions = Array.from(printerSet);
+        setPrinters(printerOptions);
+        setSelectedPrinter(data.default_printer || printerOptions[0] || "");
+
+        const sizeSet = new Set(data.available_sizes || ["4x6", "6x4"]);
+        if (data.default_print_size) {
+          sizeSet.add(data.default_print_size);
+        }
+        const sizeOptions = Array.from(sizeSet);
+        setAvailableSizes(sizeOptions);
+        setPrintSize(data.default_print_size || sizeOptions[0] || "4x6");
       } catch (error) {
         console.error("Error loading printers:", error);
       }
@@ -25,6 +42,7 @@ const Print = () => {
   const saveSettings = async () => {
     const config = {
       default_printer: selectedPrinter,
+      default_print_size: printSize,
       hot_folder: {
         enabled: false, // Adjust this if needed
       },
@@ -50,9 +68,9 @@ const Print = () => {
           value={selectedPrinter}
           onChange={(e) => setSelectedPrinter(e.target.value)}
         >
-          {printers.map((printer, index) => (
-            <option key={index} value={printer} className="text-base">
-              {printer}
+          {printers.map((printer) => (
+            <option key={printer} value={printer} className="text-base">
+              {printer === WINDOWS_DIALOG_OPTION ? "Windows Print Default" : printer}
             </option>
           ))}
         </select>
@@ -66,12 +84,11 @@ const Print = () => {
           value={printSize}
           onChange={(e) => setPrintSize(e.target.value)}
         >
-          <option value="4x6" className="text-base">
-            4x6
-          </option>
-          <option value="6x4 Landscape" className="text-base">
-            6x4 Landscape
-          </option>
+          {availableSizes.map((size) => (
+            <option key={size} value={size} className="text-base">
+              {size === WINDOWS_DIALOG_OPTION ? "Windows Print Default" : size}
+            </option>
+          ))}
         </select>
       </div>
 

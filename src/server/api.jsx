@@ -122,9 +122,15 @@ export const updatePrinterConfig = async (config) => {
   }
 };
 
-export const printImage = async (imageBlob) => {
+export const printImage = async (imageBlob, printer, printSize) => {
   const formData = new FormData();
   formData.append("image", imageBlob, "image.jpg");
+  if (printer) {
+    formData.append("printer", printer);
+  }
+  if (printSize) {
+    formData.append("print_size", printSize);
+  }
 
   try {
     const response = await axios.post(`${API_BASE_URL}/printer/print`, formData, {

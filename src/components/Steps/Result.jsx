@@ -1,7 +1,8 @@
-import React, { useState } from "react";
-import { printImage, sendWhatsApp } from "../../server/api";
+import React, { useEffect, useState } from "react";
+import { fetchPrinters, printImage, sendWhatsApp } from "../../server/api";
 import axios from "axios"; // masih butuh buat upload image
 const API_BASE_URL = " http://127.0.0.1:5000/api"; // ganti ke tunnel jika online
+const WINDOWS_DIALOG_OPTION = "WINDOWS_DEFAULT";
 
 const Result = () => {
   const [qrCode, setQRCode] = useState(false);
@@ -11,6 +12,62 @@ const Result = () => {
   const [printSize, setPrintSize] = useState("4x6"); // Default print size
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    const loadPrinterPreferences = async () => {
+      try {
+        const data = await fetchPrinters();
+        if (data?.default_printer) {
+          setPrinter(data.default_printer);
+        } else {
+          setPrinter(WINDOWS_DIALOG_OPTION);
+        }
+        if (data?.default_print_size) {
+          setPrintSize(data.default_print_size);
+        }
+      } catch (error) {
+        console.error("Failed to load printer preferences:", error);
+        setPrinter(WINDOWS_DIALOG_OPTION);
+      }
+    };
+
+    loadPrinterPreferences();
+  }, []);
+
+  const openWindowsPrintDialog = (imageSrc) => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      alert("Please allow pop-ups to use the Windows print dialog.");
+      return false;
+    }
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Print Image</title>
+          <style>
+            body {
+              margin: 0;
+              display: flex;
+              height: 100vh;
+              align-items: center;
+              justify-content: center;
+              background: #000;
+            }
+            img {
+              max-width: 100%;
+              max-height: 100%;
+            }
+          </style>
+        </head>
+        <body>
+          <img src="${imageSrc}" onload="window.print(); window.close();" />
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    return true;
+  };
+
   const handlePrint = async () => {
     const result = localStorage.getItem("swappedPhoto") || sessionStorage.getItem("swappedPhoto");
 
@@ -19,9 +76,21 @@ const Result = () => {
       return;
     }
 
+    if (printer === WINDOWS_DIALOG_OPTION || printSize === WINDOWS_DIALOG_OPTION) {
+      const dialogOpened = openWindowsPrintDialog(result);
+      if (dialogOpened) {
+        setPrint(false);
+      }
+      return;
+    }
+
     try {
       const imageBlob = await fetch(result).then((res) => res.blob());
-      const response = await printImage(imageBlob, printer, printSize);
+      const response = await printImage(
+        imageBlob,
+        printer || undefined,
+        printSize || undefined
+      );
 
       if (response.message) {
         setPrint(false);
