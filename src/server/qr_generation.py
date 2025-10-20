@@ -2,8 +2,7 @@
 from pathlib import Path
 import qrcode
 
-# Edit this link once; keep a default for convenience
-DEFAULT_GDRIVE_URL = "testing"
+DEFAULT_GDRIVE_URL = "https://drive.google.com/drive/folders/1-LgtNoOv7f_avbl-qwPoPnD-HCZ_usXt?usp=sharing"
 QR_FILENAME = "Hasil.png"
 
 def _default_output_path() -> Path:

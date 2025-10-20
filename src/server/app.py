@@ -64,8 +64,8 @@ DATABASE = 'faceswap.db'
 TABLE_NAME = 'user_table'
 
 #ULTASMG WHATSAPP
-ULTRA_INSTANCE_ID = "instance143141"
-ULTRA_TOKEN = "tbdnkx9ae7xse4ca"
+ULTRA_INSTANCE_ID = "instance143424"
+ULTRA_TOKEN = "qft4hitw1ji6fted"
 
 # Sesuaikan pathnya
 BASE_ASSET_DIR = (Path(__file__).resolve().parents[1] / "assets").resolve()
@@ -483,7 +483,8 @@ def save_user_data():
         user_data = request.json
         name = user_data.get('name')
         phone = str(user_data.get('phone'))
-        email = user_data.get('email', '')  # Default to empty string if not provided
+        # Default missing email to empty string while column remains NOT NULL
+        email = (user_data.get('email') or '').strip()
         
         if not name or not phone:
             return jsonify({"message": "Missing name or phone"}), 400
@@ -492,8 +493,8 @@ def save_user_data():
             phone = "62" + phone[1:]
 
         # Email is required for new entries, but we'll handle empty ones for backward compatibility
-        if not email:
-            return jsonify({"message": "Email is required"}), 400
+        # if not email:
+        #     return jsonify({"message": "Email is required"}), 400
 
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
@@ -578,7 +579,8 @@ def send_whatsapp():
         "token": ULTRA_TOKEN,
         "to": phone,
         "image": image_url,
-        "caption": "Foto kamu sudah jadi 🎉"
+        "caption": """Halo Game Changers! ini dia hasil photobooth AI kolaborasi ALVA x DOMINATE di IMOS 2025! jangan lupa post di Instagram dan Tag @alvaauto.ev
+jangan lupa untuk test ride dan foto di area ALVA Lifestyle Collection ya"""
     }
 
     try:

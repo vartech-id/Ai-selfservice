@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { printImage, sendWhatsApp } from "../../server/api";
 import axios from "axios"; // masih butuh buat upload image
-const API_BASE_URL = "https://5572f8bd8405.ngrok-free.app/api"; // bisa ganti ke ngrok URL
+import { FaWhatsapp } from "react-icons/fa";
+const API_BASE_URL = "https://8bbbf26753ad.ngrok-free.app/api"; // rubah url http://127.0.0.1:5000 ke ngrok URL
 
 const Result = () => {
   const [qrCode, setQRCode] = useState(false);
@@ -10,6 +11,7 @@ const Result = () => {
   const [printer, setPrinter] = useState(""); // Printer selection
   const [printSize, setPrintSize] = useState("4x6"); // Default print size
   const [loading, setLoading] = useState(false);
+  const [waMessage, setWaMessage] = useState(null);
 
   const handlePrint = async () => {
     const result = localStorage.getItem("swappedPhoto");
@@ -43,12 +45,19 @@ const Result = () => {
     }, 2000);
   };
 
+  const PopUpWA = (message) => {
+    setWaMessage(message);
+    setTimeout(() => {
+      setWaMessage(null);
+    }, 2500);
+  };
+
   const handleSendWhatsApp = async () => {
     setLoading(true);
     try {
       const swappedPhoto = localStorage.getItem("swappedPhoto");
       if (!swappedPhoto) {
-        alert("No image found!");
+        PopUpWA("No image found!");
         return;
       }
 
@@ -69,7 +78,7 @@ const Result = () => {
 
       const phone = localStorage.getItem("userPhone"); // pastikan format 62xxxx
       if (!phone) {
-        alert("No phone number found!");
+        PopUpWA("No phone number found!");
         return;
       }
 
@@ -77,11 +86,11 @@ const Result = () => {
       const waRes = await sendWhatsApp(phone, imageUrl);
 
       console.log("WA Response:", waRes);
-      alert("Foto berhasil dikirim ke WhatsApp!");
-      localStorage.clear();
+      PopUpWA("Successfully Sent to WhatsApp!");
+//       localStorage.clear();
     } catch (err) {
       console.error("Error sending WhatsApp:", err);
-      alert("Gagal kirim ke WhatsApp");
+      PopUpWA("Gagal kirim ke WhatsApp");
     } finally {
       setLoading(false);
     }
@@ -99,11 +108,23 @@ const Result = () => {
 
       <div className="flex items-center justify-center gap-4">
         <button
-          onClick={handleSendWhatsApp}
-          disabled={loading}
-          className="bg-green-500 text-white p-4 rounded-md text-2xl"
+            onClick={handleSendWhatsApp}
+            disabled={loading}
+            className={`rounded-2xl p-4 flex items-center justify-center shadow-lg transition ${
+            loading ? "opacity-60 cursor-not-allowed" : "hover:opacity-90"
+            }`}
+            aria-label="Send to WhatsApp"
+            title="Send to WhatsApp"
         >
-          {loading ? "Sending..." : "Send to WhatsApp"}
+            {loading ? (
+            <span className="text-white text-lg font-medium">Sending...</span>
+            ) : (
+            <img
+                src="/whatsapp-icon.png" // taro PNG di folder public
+                alt="WhatsApp"
+                className="w-16 h-16"
+            />
+            )}
         </button>
         <div>
           <img
@@ -167,6 +188,13 @@ const Result = () => {
           Printed!
         </div>
       ) : null}
+
+      {/* ✅ WhatsApp popup */}
+      {waMessage && (
+        <div className="bg-green-600 z-10 absolute w-fit mx-auto text-[3.5em] text-white py-3 px-10 rounded-md shadow-lg">
+          {waMessage}
+        </div>
+      )}
     </div>
   );
 };

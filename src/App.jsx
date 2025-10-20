@@ -34,12 +34,12 @@ const App = () => {
   const handleUserData = async () => {
     const name = localStorage.getItem("name");
     const phone = localStorage.getItem("userPhone");
-    const email = localStorage.getItem("email");
+    // const email = localStorage.getItem("email"); // Uncomment when email collection returns
 
     const userData = {
       name: name,
       phone: phone,
-      email: email,
+      email: "", // Restore to `email` when the form is active
     };
 
     const result = await saveUserData(userData);
@@ -60,9 +60,33 @@ const App = () => {
 
   const nextStep = () => {
     if (step === 1) {
+      // Validasi phone sebelum lanjut
+      let value = phone.trim();
+
+      if (value.startsWith("0")) {
+        value = "+62" + value.slice(1);
+      } else if (value.startsWith("62")) {
+        value = "+" + value;
+      } else if (!value.startsWith("+")) {
+        value = "+" + value;
+      }
+
+      // Regex cek format internasional (E.164)
+      const isValidPhone = /^\+[1-9]\d{7,14}$/.test(value);
+
+      if (!isValidPhone) {
+        alert("Nomor tidak valid. Gunakan format internasional, contoh: +6281234567890");
+        return; // stop nextStep kalau tidak valid
+      }
+
+      setPhone(value);
+      localStorage.setItem("userPhone", value);
+
+      // Simpan data user
       handleUserData();
     }
 
+    // lanjut step berikutnya
     setStep((prevStep) => (prevStep < steps.length ? prevStep + 1 : prevStep));
   };
 
@@ -72,7 +96,7 @@ const App = () => {
 
   // Disable Next button if any field in UserForm is empty
   const isNextDisabled =
-    step === 1 && (!name.trim() || !phone.trim() || !email.trim());
+    step === 1 && (!name.trim() || !phone.trim());
 
   const steps = [
     <UserForm
