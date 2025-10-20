@@ -72,6 +72,24 @@ const CameraCapture = ({ goBack, goTo }) => {
     setIsVideoVisible(false);
   };
 
+  const compressImage = (url, maxWidth = 1800, quality = 1) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
+        canvas.width = img.width * ratio;
+        canvas.height = img.height * ratio;
+        
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = url;
+    });
+  };
+
   const handleSwapFace = async (sourceImageBlob) => {
     const templateUrl = localStorage.getItem("selectedTemplate");
     const sourceFile = new File([sourceImageBlob], "source.jpg", {
@@ -84,7 +102,14 @@ const CameraCapture = ({ goBack, goTo }) => {
       const swappedImageUrl = await swapFace(templateUrl, sourceFile);
       if (swappedImageUrl) {
         setCapturedPhoto(swappedImageUrl);
-        localStorage.setItem("swappedPhoto", swappedImageUrl);
+        
+        try {
+          const compressedUrl = await compressImage(swappedImageUrl);
+          localStorage.setItem("swappedPhoto", compressedUrl);
+        } catch (storageError) {
+          console.warn("Storage quota exceeded, using session storage:", storageError);
+          sessionStorage.setItem("swappedPhoto", swappedImageUrl);
+        }
       }
     } catch (error) {
       console.error("Error swapping face:", error);

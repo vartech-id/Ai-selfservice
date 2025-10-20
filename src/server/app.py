@@ -100,6 +100,10 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 config = configparser.ConfigParser()
 CONFIG_FILE = 'config.ini'
 
+WINDOWS_DIALOG_OPTION = "WINDOWS_DEFAULT"
+AUTO_PRINT_SIZES = ["4x6", "6x4"]
+SUPPORTED_PRINT_SIZES = AUTO_PRINT_SIZES + [WINDOWS_DIALOG_OPTION] if IS_WINDOWS else AUTO_PRINT_SIZES
+
 def load_config():
     """Load configuration from file or create with defaults."""
     if os.path.exists(CONFIG_FILE):
@@ -125,6 +129,20 @@ def load_config():
                 'default_print_size': '4x6'
             }
         save_config()
+
+    if 'Printer' not in config:
+        config['Printer'] = {}
+    if not config['Printer'].get('default_printer'):
+        if IS_WINDOWS:
+            config['Printer']['default_printer'] = win32print.GetDefaultPrinter()
+        else:
+            try:
+                conn = cups.Connection()
+                config['Printer']['default_printer'] = conn.getDefault() or "No default printer"
+            except:
+                config['Printer']['default_printer'] = "No printer"
+    if config['Printer'].get('default_print_size') not in SUPPORTED_PRINT_SIZES:
+        config['Printer']['default_print_size'] = AUTO_PRINT_SIZES[0]
 
     os.makedirs(config['HotFolder']['path'], exist_ok=True)
     return config
