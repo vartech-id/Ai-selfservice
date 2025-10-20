@@ -24,7 +24,7 @@ const Gender = () => {
 
   return (
     <div className="w-full text-center">
-      <h1 className="text-white text-[5em] font-bold">Choose Your Gender</h1>
+      {/* <h1 className="text-white text-[5em] font-bold">Choose Your Gender</h1> */}
       <div className="flex mt-24 mx-auto space-x-10 justify-center items-center">
         {genders.map((gender) => (
           <img

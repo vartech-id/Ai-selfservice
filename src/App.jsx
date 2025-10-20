@@ -4,7 +4,7 @@ import Gender from "./components/Steps/Gender";
 import Capture from "./components/Steps/Capture";
 import Result from "./components/Steps/Result";
 import Opening from "./components/Steps/Opening";
-import Logo from "./components/Logo";
+// import Logo from "./components/Logo";
 import Template from "./components/Steps/Template";
 import { saveUserData } from "./server/api";
 
@@ -169,7 +169,7 @@ const App = () => {
           <Route path="/csv" element={<CSV />} />
         </Routes>
 
-        <div
+        {/* <div
           onClick={() => {
             setName("");
             setPhone("");
@@ -180,7 +180,7 @@ const App = () => {
           }}
         >
           <Logo />
-        </div>
+        </div> */}
       </div>
     </Router>
   );

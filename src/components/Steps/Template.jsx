@@ -29,7 +29,7 @@ const Template = () => {
     <div className="px-4">
       {templates != null ? (
         <div className="text-center">
-          <h1 className="text-white text-[5em] font-bold">Choose Your AI</h1>
+          {/* <h1 className="text-white text-[5em] font-bold">Choose Your AI</h1> */}
           <div className="flex items-center justify-start gap-x-10 overflow-x-auto mt-[6rem] scrollbar-hide">
             {templates.map((template, index) => (
               <img

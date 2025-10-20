@@ -157,8 +157,9 @@ const Result = () => {
   };
 
   return (
-    <div className="w-full flex flex-col items-center justify-center">
-      <h1 className="text-white text-[5em] font-bold">This is Yours</h1>
+    <div className="w-full h-screen absolute inset-0 bg-[url('./assets/ui/bg_result.png')] bg-cover bg-center flex 
+     flex-col items-center justify-center">
+      {/* <h1 className="text-white text-[5em] font-bold">This is Yours</h1> */}
 
       <img
         src={localStorage.getItem("swappedPhoto") || sessionStorage.getItem("swappedPhoto")}
@@ -167,13 +168,13 @@ const Result = () => {
       />
 
       <div className="flex items-center justify-center gap-4">
-        <button
+        {/* <button
           onClick={handleSendWhatsApp}
           disabled={loading}
           className="bg-green-500 text-white p-4 rounded-md text-2xl"
         >
           {loading ? "Sending..." : "Send to WhatsApp"}
-        </button>
+        </button> */}
         <div>
           <img
             // Taro di public folder
