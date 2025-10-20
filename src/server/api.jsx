@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = "https://8bbbf26753ad.ngrok-free.app/api"; // rubah url http://127.0.0.1:5000 ke ngrok URL
+const API_BASE_URL = "http://127.0.0.1:5000/api"; // rubah url http://127.0.0.1:5000 ke ngrok URL
 
 export const fetchTemplates = async (gender) => {
   try {

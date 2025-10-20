@@ -16,6 +16,7 @@ const Print = () => {
         const data = await fetchPrinters();
 
         const printerSet = new Set(data.printers || []);
+        printerSet.add(WINDOWS_DIALOG_OPTION);
         if (data.default_printer) {
           printerSet.add(data.default_printer);
         }
@@ -24,6 +25,7 @@ const Print = () => {
         setSelectedPrinter(data.default_printer || printerOptions[0] || "");
 
         const sizeSet = new Set(data.available_sizes || ["4x6", "6x4"]);
+        sizeSet.add(WINDOWS_DIALOG_OPTION);
         if (data.default_print_size) {
           sizeSet.add(data.default_print_size);
         }
