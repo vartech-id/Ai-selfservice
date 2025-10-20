@@ -69,14 +69,19 @@ const Result = () => {
   };
 
   const handlePrint = async () => {
-    const result = localStorage.getItem("swappedPhoto") || sessionStorage.getItem("swappedPhoto");
+    const result =
+      localStorage.getItem("swappedPhoto") ||
+      sessionStorage.getItem("swappedPhoto");
 
     if (!result) {
       alert("No image found to print!");
       return;
     }
 
-    if (printer === WINDOWS_DIALOG_OPTION || printSize === WINDOWS_DIALOG_OPTION) {
+    if (
+      printer === WINDOWS_DIALOG_OPTION ||
+      printSize === WINDOWS_DIALOG_OPTION
+    ) {
       const dialogOpened = openWindowsPrintDialog(result);
       if (dialogOpened) {
         setPrint(false);
@@ -115,7 +120,9 @@ const Result = () => {
   const handleSendWhatsApp = async () => {
     setLoading(true);
     try {
-      const swappedPhoto = localStorage.getItem("swappedPhoto") || sessionStorage.getItem("swappedPhoto");
+      const swappedPhoto =
+        localStorage.getItem("swappedPhoto") ||
+        sessionStorage.getItem("swappedPhoto");
       if (!swappedPhoto) {
         alert("No image found!");
         return;
@@ -157,12 +164,17 @@ const Result = () => {
   };
 
   return (
-    <div className="w-full h-screen absolute inset-0 bg-[url('./assets/ui/bg_result.png')] bg-cover bg-center flex 
-     flex-col items-center justify-center">
+    <div
+      className="w-full h-screen absolute inset-0 bg-[url('./assets/ui/bg_result.png')] bg-cover bg-center flex 
+     flex-col items-center justify-center"
+    >
       {/* <h1 className="text-white text-[5em] font-bold">This is Yours</h1> */}
 
       <img
-        src={localStorage.getItem("swappedPhoto") || sessionStorage.getItem("swappedPhoto")}
+        src={
+          localStorage.getItem("swappedPhoto") ||
+          sessionStorage.getItem("swappedPhoto")
+        }
         alt="Swapped result"
         className="w-3/5 my-[6rem]"
       />
@@ -237,6 +249,10 @@ const Result = () => {
           Printed!
         </div>
       ) : null}
+
+      <button className="home absolute bottom-[10%] left-1/2 transform -translate-x-1/2 px-8 py-4 px-16 rounded-full uppercase font-bold text-4xl    transition-colors z-10 ">
+        HOME
+        </button>
     </div>
   );
 };

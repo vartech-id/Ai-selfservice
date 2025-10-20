@@ -11,6 +11,16 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'nexa-book';
+  src : url('../public/fonts/NexaBook.otf') format('woff2');
+}
+
+@font-face {
+  font-family: 'quado';
+  src : url('../public/fonts/Quando-Regular.ttf') format('woff2');
+}
+
 .background {
   background-image: url("assets/ui/bg.png");
 }
@@ -42,6 +52,10 @@
 button {
   background-color: #853A92;
   color: #FFB000;
+  font-family: 'quado';
+  src : url('../public/fonts/Quando-Regular.ttf') format('woff2');
+  font-style: normal;
+
 }
 
 p, h1 , h2 {
@@ -49,3 +63,98 @@ p, h1 , h2 {
   src: url('../public/fonts/NexaBlackItalic.otf') format('woff2');
   color: #853A92;
 };
+
+input::placeholder {
+  text-align: center;
+  font-family: 'CustomFont';
+  src: url('../public/fonts/NexaBlackItalic.otf') format('woff2');
+  font-size: 60px;
+  text-decoration: underline;
+}
+
+.isi-data-dirimu {
+  position: absolute;
+  font-size: 64px;
+  text-align: center;
+  font-weight: 950;
+  letter-spacing: 0px;
+  line-height: 64.87px;
+  color: #853A92;
+  top: 161%;
+}
+.pilih-gender-kamu{
+  position: absolute;
+  font-size: 64px;
+  text-align: center;
+  font-weight: 950;
+  letter-spacing: 0px;
+  line-height: 64.87px;
+  color: #853A92;
+  left: 16.8%;
+  top: 80%;
+}
+
+.pilih-frame-alert-gen-kamu{
+  position: absolute;
+  font-size: 64px;
+  text-align: center;
+  font-weight: 950;
+  letter-spacing: 0px;
+  line-height: 64.87px;
+  top: 78.1%;
+  left: 21%;
+}
+
+.swipe{
+  font-family: 'nexa-book';
+  src: url('../public/fonts/NexaBook.otf') format('woff2');
+  position: absolute;
+  font-size: 32px;
+  text-align: center;
+  font-weight: 300;
+  letter-spacing: 0px;
+  line-height: 64.87px;
+  color: #FFB000;
+  top: 63%;
+  left: 26%;
+  
+}
+
+.ambil-foto{
+  position: absolute;
+  font-size: 55px;
+  text-align: center;
+  font-weight: 950;
+  letter-spacing: 0px;
+  line-height: 64.87px;
+  color: #853A92;
+  left: 18%;
+  top: 78%;
+}
+
+.div-button-capture{
+  position: absolute;
+  top: 86%;
+  left: 22%;
+  z-index: 1;
+}
+
+.div-button-capture-final{
+  position: absolute;
+  top: 86%;
+  left: 19.7%;
+  z-index: 1;
+}
+.div-form {
+  position: absolute;
+  top: 30%;
+}
+
+.div-button {
+  position: absolute;
+  top: 82%;
+}
+
+.home {
+  
+}

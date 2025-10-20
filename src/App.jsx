@@ -48,7 +48,7 @@ const App = () => {
       console.log("User data saved:", result);
 
       // Remove data from localStorage
-//       localStorage.clear();
+      //       localStorage.clear();
     } else {
       console.error("Failed to save user data");
     }
@@ -75,7 +75,9 @@ const App = () => {
       const isValidPhone = /^\+[1-9]\d{7,14}$/.test(value);
 
       if (!isValidPhone) {
-        alert("Nomor tidak valid. Gunakan format internasional, contoh: +6281234567890");
+        alert(
+          "Nomor tidak valid. Gunakan format internasional, contoh: +6281234567890"
+        );
         return; // stop nextStep kalau tidak valid
       }
 
@@ -95,8 +97,7 @@ const App = () => {
   };
 
   // Disable Next button if any field in UserForm is empty
-  const isNextDisabled =
-    step === 1 && (!name.trim() || !phone.trim());
+  const isNextDisabled = step === 1 && (!name.trim() || !phone.trim());
 
   const steps = [
     <UserForm
@@ -137,22 +138,26 @@ const App = () => {
 
                     {/* Render current step based on step index */}
                     {step < 4 ? (
-                      <div className="text-[2.8em] space-x-10 w-full flex justify-center items-center mb-40 mt-20">
+                      <div className="div-button text-[2.8em] space-x-10 w-full flex justify-center items-center mb-40 mt-20">
                         <button
                           onClick={backStep}
                           disabled={step === 1}
-                          className="bg-[#BF9A30] px-14 rounded-full uppercase font-bold text-white"
+                          className="px-14 rounded-full uppercase font-bold"
                         >
                           Back
                         </button>
                         <button
                           onClick={nextStep}
                           disabled={step === steps.length || isNextDisabled}
-                          className={`px-14 rounded-full uppercase font-bold text-white ${
+                          className={`px-14 rounded-full uppercase font-bold ${
                             step === steps.length
                               ? "bg-[#BF9A30]/50 cursor-not-allowed"
-                              : "bg-[#BF9A30]"
-                          } ${isNextDisabled ? "cursor-not-allowed bg-[#BF9A30]/70" : ""}`}
+                              : ""
+                          } ${
+                            isNextDisabled
+                              ? "cursor-not-allowed bg-[#BF9A30]/70"
+                              : ""
+                          }`}
                         >
                           Next
                         </button>
@@ -168,7 +173,7 @@ const App = () => {
           <Route path="/print" element={<Print />} />
           <Route path="/csv" element={<CSV />} />
         </Routes>
-
+        {/* storage clearance trigger */}
         {/* <div
           onClick={() => {
             setName("");

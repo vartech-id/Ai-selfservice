@@ -37,8 +37,8 @@ const Template = () => {
                 src={template.imageUrl}
                 alt="templates"
                 className={`${selectedIndex === index
-                    ? "border-[1em] border-yellow-500 w-[320px]"
-                    : "w-[300px]"
+                    ? "border-[1em] border-yellow-500 w-[400px]"
+                    : "w-[400px]"
                   } object-contain`}
                 onClick={() => { handleImageClick(index); localStorage.setItem("selectedTemplate", template.imageUrl) }}
               />
@@ -48,7 +48,10 @@ const Template = () => {
       ) : (
         <h1>No template selected.</h1>
       )}
+      <p className="swipe">Swipe untuk melihat lebih banyak</p>
+      <p className="pilih-frame-alert-gen-kamu">PILIH FRAME <br></br>ALERT-GEN KAMU</p>
     </div>
+    
   );
 };
 

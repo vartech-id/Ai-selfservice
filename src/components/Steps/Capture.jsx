@@ -15,7 +15,7 @@ const CameraCapture = ({ goBack, goTo }) => {
     return () => {
       if (videoRef.current?.srcObject) {
         const tracks = videoRef.current.srcObject.getTracks();
-        tracks.forEach(track => track.stop());
+        tracks.forEach((track) => track.stop());
       }
     };
   }, []);
@@ -24,7 +24,7 @@ const CameraCapture = ({ goBack, goTo }) => {
     let countdownInterval;
     if (isCountingDown && countdown > 0) {
       countdownInterval = setInterval(() => {
-        setCountdown(prev => prev - 1);
+        setCountdown((prev) => prev - 1);
       }, 1000);
     } else if (countdown === 0) {
       onCapture();
@@ -76,15 +76,15 @@ const CameraCapture = ({ goBack, goTo }) => {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
         const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
         canvas.width = img.width * ratio;
         canvas.height = img.height * ratio;
-        
+
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', quality));
+        resolve(canvas.toDataURL("image/jpeg", quality));
       };
       img.src = url;
     });
@@ -102,12 +102,15 @@ const CameraCapture = ({ goBack, goTo }) => {
       const swappedImageUrl = await swapFace(templateUrl, sourceFile);
       if (swappedImageUrl) {
         setCapturedPhoto(swappedImageUrl);
-        
+
         try {
           const compressedUrl = await compressImage(swappedImageUrl);
           localStorage.setItem("swappedPhoto", compressedUrl);
         } catch (storageError) {
-          console.warn("Storage quota exceeded, using session storage:", storageError);
+          console.warn(
+            "Storage quota exceeded, using session storage:",
+            storageError
+          );
           sessionStorage.setItem("swappedPhoto", swappedImageUrl);
         }
       }
@@ -128,14 +131,17 @@ const CameraCapture = ({ goBack, goTo }) => {
   return (
     <div className="text-center space-y-[6rem]">
       {isLoading ? (
-        <div className="z-10 absolute inset-0 grid mb-[5em]">
+        <div
+          className="w-full h-screen absolute inset-0 bg-[url('./assets/ui/bg_result.png')] bg-cover bg-center flex 
+     flex-col items-center justify-center"
+        >
           <img src="/loading.gif" alt="loading" className="m-auto w-2/5" />
         </div>
       ) : (
         <>
-          <h1 className="text-white text-[5em] font-bold">
+          {/* <h1 className="text-white text-[5em] font-bold">
             Look at the Camera
-          </h1>
+          </h1> */}
 
           {isVideoVisible && (
             <div className="relative">
@@ -164,38 +170,41 @@ const CameraCapture = ({ goBack, goTo }) => {
 
           <div className="space-x-6">
             {isVideoVisible ? (
-              <>
+              <div className="div-button-capture">
                 <button
                   onClick={goBack}
-                  className="bg-[#BF9A30] px-14 rounded-full uppercase font-bold text-white text-[2.8em]"
+                  className="px-14 rounded-full uppercase font-bold text-[2.8em]"
                   disabled={isCountingDown}
                 >
                   Back
                 </button>
                 <button
                   onClick={startCountdown}
-                  className="bg-[#BF9A30] px-14 rounded-full uppercase font-bold text-white text-[2.8em]"
+                  className="px-14 rounded-full uppercase font-bold text-[2.8em]"
                   disabled={isCountingDown}
                 >
                   Capture
                 </button>
-              </>
+              </div>
             ) : (
-              <>
+              <div className="div-button-capture-final">
                 <button
                   onClick={handleCancel}
-                  className="bg-[#BF9A30] px-14 rounded-full uppercase font-bold text-white text-[2.8em]"
+                  className="px-14 rounded-full uppercase font-bold text-[2.8em]"
                 >
                   Retake
                 </button>
                 <button
                   onClick={() => handleSwapFace(capturedPhoto)}
-                  className="bg-[#BF9A30] px-14 rounded-full uppercase font-bold text-white text-[2.8em]"
+                  className="px-14 rounded-full uppercase font-bold text-[2.8em]"
                 >
                   Process
                 </button>
-              </>
+              </div>
             )}
+            <p className="ambil-foto">
+              AMBIL FOTO DENGAN <br></br> POSE TERBAIKMU!
+            </p>
           </div>
         </>
       )}

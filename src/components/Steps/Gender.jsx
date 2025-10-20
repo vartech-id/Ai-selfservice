@@ -40,6 +40,7 @@ const Gender = () => {
           />
         ))}
       </div>
+      <p className="pilih-gender-kamu">PILIH GENDER KAMU!</p>
     </div>
   );
 };
