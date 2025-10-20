@@ -34,12 +34,12 @@ const App = () => {
   const handleUserData = async () => {
     const name = localStorage.getItem("name");
     const phone = localStorage.getItem("userPhone");
-    const email = localStorage.getItem("email");
+    // const email = localStorage.getItem("email"); // Uncomment when email collection returns
 
     const userData = {
       name: name,
       phone: phone,
-      email: email,
+      email: "", // Restore to `email` when the form is active
     };
 
     const result = await saveUserData(userData);

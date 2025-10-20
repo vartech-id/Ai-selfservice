@@ -483,7 +483,8 @@ def save_user_data():
         user_data = request.json
         name = user_data.get('name')
         phone = str(user_data.get('phone'))
-        email = user_data.get('email', '')  # Default to empty string if not provided
+        # Default missing email to empty string while column remains NOT NULL
+        email = (user_data.get('email') or '').strip()
         
         if not name or not phone:
             return jsonify({"message": "Missing name or phone"}), 400
@@ -578,7 +579,8 @@ def send_whatsapp():
         "token": ULTRA_TOKEN,
         "to": phone,
         "image": image_url,
-        "caption": "Foto kamu sudah jadi 🎉"
+        "caption": """Halo Game Changers! ini dia hasil photobooth AI kolaborasi ALVA x DOMINATE di IMOS 2025! jangan lupa post di Instagram dan Tag @alvaauto.ev
+jangan lupa untuk test ride dan foto di area ALVA Lifestyle Collection ya"""
     }
 
     try:
