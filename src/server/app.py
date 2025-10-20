@@ -493,8 +493,8 @@ def save_user_data():
             phone = "62" + phone[1:]
 
         # Email is required for new entries, but we'll handle empty ones for backward compatibility
-        # if not email:
-        #     return jsonify({"message": "Email is required"}), 400
+        if not email:
+            return jsonify({"message": "Email is required"}), 400
 
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
