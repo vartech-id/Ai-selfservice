@@ -12,7 +12,7 @@ const Opening = ({ onStart }) => {
 ALERTGEN KAMU!</p>
       <button
         onClick={onStart}
-        className="absolute bottom-[-55%] left-1/2 transform -translate-x-1/2 px-8 py-4 bg-[#BF9A30] px-16 rounded-full uppercase font-bold text-4xl text-white hover:bg-blue-600 transition-colors z-10"
+        className="absolute bottom-[-55%] left-1/2 transform -translate-x-1/2 px-8 py-4 px-16 rounded-full uppercase font-bold text-4xl hover:bg-blue-600 transition-colors z-10"
       >
         NEXT →
       </button>
