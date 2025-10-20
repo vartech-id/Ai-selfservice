@@ -4,7 +4,7 @@ import axios from "axios"; // masih butuh buat upload image
 const API_BASE_URL = " http://127.0.0.1:5000/api"; // ganti ke tunnel jika online
 const WINDOWS_DIALOG_OPTION = "WINDOWS_DEFAULT";
 
-const Result = () => {
+const Result = (props) => {
   const [qrCode, setQRCode] = useState(false);
   const [print, setPrint] = useState(false);
   const [printMessage, setPrintMessage] = useState(false);
@@ -250,9 +250,13 @@ const Result = () => {
         </div>
       ) : null}
 
-      <button className="home absolute bottom-[10%] left-1/2 transform -translate-x-1/2 px-8 py-4 px-16 rounded-full uppercase font-bold text-4xl    transition-colors z-10 ">
-        HOME
-        </button>
+    <button
+      className="home absolute bottom-[10%] left-1/2 transform -translate-x-1/2 px-8 py-4 px-16 rounded-full uppercase font-bold text-4xl 
+     transition-colors z-10"
+      onClick={props.onHomeClick}  // Use the passed function
+    >
+      HOME
+    </button>
     </div>
   );
 };

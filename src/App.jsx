@@ -114,7 +114,17 @@ const App = () => {
     <Gender key={1} onNext={nextStep} onBack={backStep} />,
     <Template key={2} onNext={nextStep} onBack={backStep} />,
     <Capture key={3} goTo={nextStep} goBack={backStep} />,
-    <Result key={4} />,
+    <Result 
+      key={4} 
+      onHomeClick={() => {
+        setName("");
+        setPhone("");
+        setEmail("");
+        localStorage.clear();
+        setStarted(false);
+        setStep(1);
+      }} 
+    />,
   ];
 
   return (
@@ -159,7 +169,7 @@ const App = () => {
                               : ""
                           }`}
                         >
-                          Next
+                          NEXT
                         </button>
                       </div>
                     ) : null}
@@ -173,19 +183,6 @@ const App = () => {
           <Route path="/print" element={<Print />} />
           <Route path="/csv" element={<CSV />} />
         </Routes>
-        {/* storage clearance trigger */}
-        {/* <div
-          onClick={() => {
-            setName("");
-            setPhone("");
-            setEmail("");
-            localStorage.clear();
-            setStarted(false);
-            setStep(1);
-          }}
-        >
-          <Logo />
-        </div> */}
       </div>
     </Router>
   );
